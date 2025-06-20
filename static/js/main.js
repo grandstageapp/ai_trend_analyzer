@@ -30,19 +30,25 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     console.log('Initializing AI Trends Analyzer...');
     
-    // Initialize components
-    initializeNavigation();
-    initializeSearch();
-    initializeFilters();
-    initializeTrendCards();
-    initializeTooltips();
-    initializeAutoRefresh();
-    initializeKeyboardShortcuts();
-    
-    // Initialize HTMX event listeners
-    initializeHTMXEvents();
-    
-    console.log('AI Trends Analyzer initialized successfully');
+    try {
+        // Initialize components
+        initializeNavigation();
+        initializeSearch();
+        initializeFilters();
+        initializeTrendCards();
+        initializeTooltips();
+        initializeAutoRefresh();
+        initializeKeyboardShortcuts();
+        
+        // Initialize HTMX event listeners
+        initializeHTMXEvents();
+        
+        console.log('AI Trends Analyzer initialized successfully');
+    } catch (error) {
+        console.error('Error initializing application:', error);
+        // Show error to user
+        showError('Application initialization failed. Please refresh the page.');
+    }
 }
 
 // Navigation Management
@@ -185,6 +191,12 @@ function initializeTrendCardEvents() {
 
 // Tooltip Management
 function initializeTooltips() {
+    // Check if Bootstrap is available
+    if (typeof bootstrap === 'undefined') {
+        console.warn('Bootstrap not loaded, skipping tooltip initialization');
+        return;
+    }
+    
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl, {
@@ -346,24 +358,41 @@ function hideLoadingOverlay() {
 
 // Notification Management
 function showSuccess(message) {
-    const toast = document.getElementById('successToast');
-    const toastBody = document.getElementById('successToastBody');
-    
-    if (toast && toastBody) {
-        toastBody.textContent = message;
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
+    try {
+        const toast = document.getElementById('successToast');
+        const toastBody = document.getElementById('successToastBody');
+        
+        if (toast && toastBody && typeof bootstrap !== 'undefined') {
+            toastBody.textContent = message;
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        } else {
+            console.log('Success:', message);
+        }
+    } catch (error) {
+        console.error('Error showing success toast:', error);
+        console.log('Success:', message);
     }
 }
 
 function showError(message) {
-    const toast = document.getElementById('errorToast');
-    const toastBody = document.getElementById('errorToastBody');
-    
-    if (toast && toastBody) {
-        toastBody.textContent = message;
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
+    try {
+        const toast = document.getElementById('errorToast');
+        const toastBody = document.getElementById('errorToastBody');
+        
+        if (toast && toastBody && typeof bootstrap !== 'undefined') {
+            toastBody.textContent = message;
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        } else {
+            console.error('Error:', message);
+            // Fallback to alert if Bootstrap isn't available
+            alert('Error: ' + message);
+        }
+    } catch (error) {
+        console.error('Error showing error toast:', error);
+        console.error('Error:', message);
+        alert('Error: ' + message);
     }
 }
 
