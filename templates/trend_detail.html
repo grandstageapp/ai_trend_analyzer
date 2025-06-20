@@ -82,7 +82,36 @@
                 <div class="card-body">
                     {% if trend.description %}
                         <div class="trend-description">
-                            {{ trend.description|markdown|safe }}
+                            {% set description_parts = trend.description.split('\n\n') %}
+                            
+                            <!-- Overview section (always visible) -->
+                            <div class="overview-section">
+                                {% if description_parts|length > 0 %}
+                                    {{ description_parts[0]|markdown|safe }}
+                                    {% if description_parts|length > 1 and description_parts[1] %}
+                                        {{ description_parts[1]|markdown|safe }}
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Expandable content -->
+                            {% if description_parts|length > 2 %}
+                                <div class="collapse" id="fullDescription">
+                                    {% for part in description_parts[2:] %}
+                                        {% if part.strip() %}
+                                            {{ part|markdown|safe }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Toggle button -->
+                                <div class="mt-3">
+                                    <button class="btn btn-link p-0 text-decoration-none fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#fullDescription" aria-expanded="false" aria-controls="fullDescription" id="toggleButton">
+                                        <i class="material-icons me-1" id="toggleIcon">expand_more</i>
+                                        <span class="toggle-text" id="toggleText">Read more</span>
+                                    </button>
+                                </div>
+                            {% endif %}
                         </div>
                     {% else %}
                         <p class="text-muted">No detailed description available for this trend yet.</p>

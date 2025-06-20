@@ -39,6 +39,7 @@ function initializeApp() {
         initializeTooltips();
         initializeAutoRefresh();
         initializeKeyboardShortcuts();
+        initializeExpandableDescription();
         
         // Initialize HTMX event listeners
         initializeHTMXEvents();
@@ -447,6 +448,26 @@ function formatDate(dateString) {
     if (diffDays <= 7) return `${diffDays} days ago`;
     
     return date.toLocaleDateString();
+}
+
+// Expandable Description Toggle
+function initializeExpandableDescription() {
+    const toggleButton = document.getElementById('toggleButton');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const toggleText = document.getElementById('toggleText');
+    const fullDescription = document.getElementById('fullDescription');
+    
+    if (toggleButton && fullDescription) {
+        fullDescription.addEventListener('shown.bs.collapse', function() {
+            if (toggleIcon) toggleIcon.textContent = 'expand_less';
+            if (toggleText) toggleText.textContent = 'Read less';
+        });
+        
+        fullDescription.addEventListener('hidden.bs.collapse', function() {
+            if (toggleIcon) toggleIcon.textContent = 'expand_more';
+            if (toggleText) toggleText.textContent = 'Read more';
+        });
+    }
 }
 
 function debounce(func, wait) {
