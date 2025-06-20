@@ -295,28 +295,94 @@ def generate_content_outline():
 
 @main_bp.route('/api/search-trends')
 def search_trends():
-    """HTMX endpoint for live trend search"""
-    search_query = request.args.get('search', '').strip()
-    
-    if not search_query:
+    """HTMX endpoint for live trend search with filters"""
+    try:
+        # Get all filter parameters
+        search_query = request.args.get('search', '').strip()
+        date_filter = request.args.get('date_filter', 'all')
+        sort_order = request.args.get('sort', 'score_desc')
+        
+        # Base query
+        query = Trend.query
+        
+        # Apply search filter
+        if search_query:
+            query = query.filter(
+                or_(
+                    Trend.title.ilike(f'%{search_query}%'),
+                    Trend.description.ilike(f'%{search_query}%')
+                )
+            )
+        
+        # Apply date filter
+        if date_filter == 'today':
+            today = datetime.utcnow().date()
+            query = query.filter(func.date(Trend.created_at) == today)
+        elif date_filter == 'week':
+            week_ago = datetime.utcnow() - timedelta(days=7)
+            query = query.filter(Trend.created_at >= week_ago)
+        elif date_filter == 'month':
+            month_ago = datetime.utcnow() - timedelta(days=30)
+            query = query.filter(Trend.created_at >= month_ago)
+        
+        # Apply sorting
+        if sort_order == 'score_desc':
+            subquery = db.session.query(
+                TrendScore.trend_id,
+                func.max(TrendScore.date_generated).label('latest_date')
+            ).group_by(TrendScore.trend_id).subquery()
+            
+            latest_scores = db.session.query(
+                TrendScore.trend_id,
+                TrendScore.score
+            ).join(
+                subquery,
+                (TrendScore.trend_id == subquery.c.trend_id) &
+                (TrendScore.date_generated == subquery.c.latest_date)
+            ).subquery()
+            
+            query = query.outerjoin(latest_scores, Trend.id == latest_scores.c.trend_id).order_by(
+                desc(latest_scores.c.score), desc(Trend.created_at)
+            )
+        elif sort_order == 'score_asc':
+            subquery = db.session.query(
+                TrendScore.trend_id,
+                func.max(TrendScore.date_generated).label('latest_date')
+            ).group_by(TrendScore.trend_id).subquery()
+            
+            latest_scores = db.session.query(
+                TrendScore.trend_id,
+                TrendScore.score
+            ).join(
+                subquery,
+                (TrendScore.trend_id == subquery.c.trend_id) &
+                (TrendScore.date_generated == subquery.c.latest_date)
+            ).subquery()
+            
+            query = query.outerjoin(latest_scores, Trend.id == latest_scores.c.trend_id).order_by(
+                asc(latest_scores.c.score), desc(Trend.created_at)
+            )
+        elif sort_order == 'newest':
+            query = query.order_by(desc(Trend.created_at))
+        elif sort_order == 'oldest':
+            query = query.order_by(asc(Trend.created_at))
+        
+        # Limit results for HTMX
+        trends = query.limit(12).all()
+        
+        # Prepare trend data
+        trend_data = []
+        for trend in trends:
+            score_history = trend.get_score_history(7)
+            trend_data.append({
+                'trend': trend,
+                'latest_score': trend.get_latest_score(),
+                'score_history': score_history,
+                'summary': truncate_text(trend.description, 2) if trend.description else ''
+            })
+        
+        return render_template('components/trend_card.html', trends=trend_data)
+        
+    except Exception as e:
+        logger.error(f"Error in search_trends: {e}")
         return render_template('components/trend_card.html', trends=[])
-    
-    trends = Trend.query.filter(
-        or_(
-            Trend.title.ilike(f'%{search_query}%'),
-            Trend.description.ilike(f'%{search_query}%')
-        )
-    ).limit(10).all()
-    
-    # Prepare trend data
-    trend_data = []
-    for trend in trends:
-        score_history = trend.get_score_history(7)
-        trend_data.append({
-            'trend': trend,
-            'latest_score': trend.get_latest_score(),
-            'score_history': score_history,
-            'summary': truncate_text(trend.description, 2) if trend.description else ''
-        })
-    
-    return render_template('components/trend_card.html', trends=trend_data)

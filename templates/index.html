@@ -42,7 +42,7 @@
                 <div class="card-body">
                     <form method="GET" class="row g-3" id="filterForm">
                         <!-- Search Input -->
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="search" class="form-label">
                                 <i class="material-icons me-1">search</i>
                                 Search Trends
@@ -58,6 +58,7 @@
                                 hx-target="#trendsContainer"
                                 hx-trigger="keyup changed delay:500ms"
                                 hx-indicator="#searchSpinner"
+                                hx-include="#date_filter, #sort"
                             >
                             <div id="searchSpinner" class="htmx-indicator">
                                 <small class="text-muted">
@@ -73,7 +74,11 @@
                                 <i class="material-icons me-1">date_range</i>
                                 Date Range
                             </label>
-                            <select class="form-select" id="date_filter" name="date_filter" onchange="document.getElementById('filterForm').submit()">
+                            <select class="form-select" id="date_filter" name="date_filter" 
+                                    hx-get="{{ url_for('main.search_trends') }}"
+                                    hx-target="#trendsContainer"
+                                    hx-trigger="change"
+                                    hx-include="#search, #sort">
                                 <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
                                 <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
                                 <option value="week" {% if date_filter == 'week' %}selected{% endif %}>This Week</option>
@@ -87,7 +92,11 @@
                                 <i class="material-icons me-1">sort</i>
                                 Sort By
                             </label>
-                            <select class="form-select" id="sort" name="sort" onchange="document.getElementById('filterForm').submit()">
+                            <select class="form-select" id="sort" name="sort" 
+                                    hx-get="{{ url_for('main.search_trends') }}"
+                                    hx-target="#trendsContainer"
+                                    hx-trigger="change"
+                                    hx-include="#search, #date_filter">
                                 <option value="score_desc" {% if sort_order == 'score_desc' %}selected{% endif %}>Highest Score</option>
                                 <option value="score_asc" {% if sort_order == 'score_asc' %}selected{% endif %}>Lowest Score</option>
                                 <option value="newest" {% if sort_order == 'newest' %}selected{% endif %}>Newest</option>
@@ -95,16 +104,14 @@
                             </select>
                         </div>
 
-                        <!-- Action Buttons -->
-                        <div class="col-md-4 d-flex align-items-end gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="material-icons me-1">filter_list</i>
-                                Apply Filters
-                            </button>
-                            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+                        <!-- Clear Button (only show when filters are applied) -->
+                        <div class="col-md-2 d-flex align-items-end">
+                            {% if search_query or date_filter != 'all' or sort_order != 'score_desc' %}
+                            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary w-100">
                                 <i class="material-icons me-1">clear</i>
                                 Clear
                             </a>
+                            {% endif %}
                         </div>
                     </form>
                 </div>
