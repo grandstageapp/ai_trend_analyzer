@@ -290,7 +290,14 @@
     // Initialize trend score chart
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('trendScoreChart').getContext('2d');
-        const scoreHistory = {{ score_history|safe }};
+        const scoreHistory = {{ score_history|tojson }};
+        
+        console.log('Score history data:', scoreHistory);
+        
+        if (!scoreHistory || scoreHistory.length === 0) {
+            console.error('No score history data available');
+            return;
+        }
         
         // Prepare chart data
         const labels = scoreHistory.map(item => {
@@ -298,7 +305,7 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
         
-        const data = scoreHistory.map(item => item[1]);
+        const data = scoreHistory.map(item => parseFloat(item[1]));
         
         new Chart(ctx, {
             type: 'line',
@@ -324,16 +331,22 @@
                 },
                 scales: {
                     y: {
-                        beginAtZero: true,
+                        beginAtZero: false,
                         title: {
                             display: true,
                             text: 'Score'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
                         }
                     },
                     x: {
                         title: {
                             display: true,
                             text: 'Date'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
                         }
                     }
                 }

@@ -142,7 +142,9 @@ def trend_detail(trend_id):
     trend = Trend.query.get_or_404(trend_id)
     
     # Get trend score history
-    score_history = trend.get_score_history(10)  # Last 10 days
+    score_history_raw = trend.get_score_history(10)  # Last 10 days
+    # Convert datetime objects to strings for JSON serialization
+    score_history = [[item[0].isoformat(), item[1]] for item in score_history_raw]
     
     # Get related posts
     related_posts = db.session.query(Post).join(PostTrend).filter(
