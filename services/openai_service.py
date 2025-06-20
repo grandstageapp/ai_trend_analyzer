@@ -230,7 +230,11 @@ class OpenAIService:
                 max_tokens=700
             )
             
-            content = response.choices[0].message.content.strip()
+            response_content = response.choices[0].message.content
+            if not response_content:
+                logger.error("Empty response from OpenAI for blog content")
+                return "Unable to generate content at this time. Please try again later."
+            content = response_content.strip()
             logger.info("Generated blog content successfully")
             return content
             

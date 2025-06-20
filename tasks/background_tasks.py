@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import List
 from app import db, create_app
-from models import Post, Author, Engagement, Trend
+from models import Post, Author, Engagement, Trend, TrendScore
 from services.twitter_service import TwitterService
 from services.trend_service import TrendService
 from config import Config
@@ -20,7 +20,7 @@ class BackgroundTasks:
     def fetch_and_process_posts(self) -> None:
         """
         Main background task to fetch posts from Twitter and process them
-        This should be run every 4 hours
+        This should be run every 24 hours
         """
         with create_app().app_context():
             try:
@@ -29,7 +29,7 @@ class BackgroundTasks:
                 # Fetch recent posts from Twitter
                 posts_data = self.twitter_service.search_recent_posts(
                     search_terms=self.config.AI_SEARCH_TERMS,
-                    max_results=100
+                    max_results=self.config.MAX_POSTS_PER_DAY
                 )
                 
                 if not posts_data:
