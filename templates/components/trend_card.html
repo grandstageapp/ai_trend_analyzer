@@ -39,7 +39,8 @@
                 <div class="col-4">
                     <small class="text-muted d-block">Age</small>
                     <strong class="text-info">
-                        {% set days_old = (moment().date() - trend_item.trend.created_at.date()).days %}
+                        {% set created = trend_item.trend.created_at %}
+                        {% set days_old = (created | days_ago) %}
                         {% if days_old == 0 %}
                             Today
                         {% elif days_old == 1 %}

@@ -50,6 +50,17 @@ def create_app():
         except Exception as e:
             logger.warning(f"Could not enable PGVector extension: {e}")
     
+    # Register custom template filters
+    from datetime import datetime
+    
+    @app.template_filter('days_ago')
+    def days_ago_filter(date):
+        """Calculate days ago from a given date"""
+        if not date:
+            return 0
+        delta = datetime.utcnow() - date
+        return delta.days
+    
     # Register blueprints
     from routes import main_bp
     app.register_blueprint(main_bp)
