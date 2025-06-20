@@ -18,7 +18,7 @@ def index():
         date_filter = request.args.get('date_filter', 'all')
         sort_order = request.args.get('sort', 'score_desc')
         page = request.args.get('page', 1, type=int)
-        per_page = 12
+        per_page = 50  # Show more trends per page to avoid pagination with few items
         
         # Base query
         query = Trend.query
