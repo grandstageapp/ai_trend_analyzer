@@ -105,8 +105,12 @@ def index():
                 'summary': truncate_text(trend.description, 2) if trend.description else ''
             })
         
+        # Get total trends count for header display
+        total_trends_count = Trend.query.count()
+        
         return render_template('index.html', 
                              trends=trend_data,
+                             total_trends_count=total_trends_count,
                              pagination=trends_pagination,
                              search_query=search_query,
                              date_filter=date_filter,
@@ -117,8 +121,15 @@ def index():
         import traceback
         traceback.print_exc()
         # Return a simple error page or fallback
+        total_trends_count = 0
+        try:
+            total_trends_count = Trend.query.count()
+        except:
+            pass
+        
         return render_template('index.html', 
                              trends=[],
+                             total_trends_count=total_trends_count,
                              pagination=None,
                              search_query='',
                              date_filter='all',
