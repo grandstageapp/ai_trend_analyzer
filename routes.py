@@ -12,104 +12,118 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def index():
     """Homepage displaying trend cards with search and filtering"""
-    # Get query parameters
-    search_query = request.args.get('search', '').strip()
-    date_filter = request.args.get('date_filter', 'all')
-    sort_order = request.args.get('sort', 'score_desc')
-    page = request.args.get('page', 1, type=int)
-    per_page = 12
-    
-    # Base query
-    query = Trend.query
-    
-    # Apply search filter
-    if search_query:
-        query = query.filter(
-            or_(
-                Trend.title.ilike(f'%{search_query}%'),
-                Trend.description.ilike(f'%{search_query}%')
+    try:
+        # Get query parameters
+        search_query = request.args.get('search', '').strip()
+        date_filter = request.args.get('date_filter', 'all')
+        sort_order = request.args.get('sort', 'score_desc')
+        page = request.args.get('page', 1, type=int)
+        per_page = 12
+        
+        # Base query
+        query = Trend.query
+        
+        # Apply search filter
+        if search_query:
+            query = query.filter(
+                or_(
+                    Trend.title.ilike(f'%{search_query}%'),
+                    Trend.description.ilike(f'%{search_query}%')
+                )
             )
+        
+        # Apply date filter
+        if date_filter == 'today':
+            today = datetime.utcnow().date()
+            query = query.filter(func.date(Trend.created_at) == today)
+        elif date_filter == 'week':
+            week_ago = datetime.utcnow() - timedelta(days=7)
+            query = query.filter(Trend.created_at >= week_ago)
+        elif date_filter == 'month':
+            month_ago = datetime.utcnow() - timedelta(days=30)
+            query = query.filter(Trend.created_at >= month_ago)
+        
+        # Apply sorting
+        if sort_order == 'score_desc':
+            # Join with latest trend scores for sorting
+            subquery = db.session.query(
+                TrendScore.trend_id,
+                func.max(TrendScore.date_generated).label('latest_date')
+            ).group_by(TrendScore.trend_id).subquery()
+            
+            latest_scores = db.session.query(
+                TrendScore.trend_id,
+                TrendScore.score
+            ).join(
+                subquery,
+                (TrendScore.trend_id == subquery.c.trend_id) &
+                (TrendScore.date_generated == subquery.c.latest_date)
+            ).subquery()
+            
+            query = query.outerjoin(latest_scores, Trend.id == latest_scores.c.trend_id).order_by(
+                desc(latest_scores.c.score), desc(Trend.created_at)
+            )
+        elif sort_order == 'score_asc':
+            # Similar to above but ascending
+            subquery = db.session.query(
+                TrendScore.trend_id,
+                func.max(TrendScore.date_generated).label('latest_date')
+            ).group_by(TrendScore.trend_id).subquery()
+            
+            latest_scores = db.session.query(
+                TrendScore.trend_id,
+                TrendScore.score
+            ).join(
+                subquery,
+                (TrendScore.trend_id == subquery.c.trend_id) &
+                (TrendScore.date_generated == subquery.c.latest_date)
+            ).subquery()
+            
+            query = query.outerjoin(latest_scores, Trend.id == latest_scores.c.trend_id).order_by(
+                asc(latest_scores.c.score), desc(Trend.created_at)
+            )
+        elif sort_order == 'newest':
+            query = query.order_by(desc(Trend.created_at))
+        elif sort_order == 'oldest':
+            query = query.order_by(asc(Trend.created_at))
+        
+        # Paginate results
+        trends_pagination = query.paginate(
+            page=page, per_page=per_page, error_out=False
         )
-    
-    # Apply date filter
-    if date_filter == 'today':
-        today = datetime.utcnow().date()
-        query = query.filter(func.date(Trend.created_at) == today)
-    elif date_filter == 'week':
-        week_ago = datetime.utcnow() - timedelta(days=7)
-        query = query.filter(Trend.created_at >= week_ago)
-    elif date_filter == 'month':
-        month_ago = datetime.utcnow() - timedelta(days=30)
-        query = query.filter(Trend.created_at >= month_ago)
-    
-    # Apply sorting
-    if sort_order == 'score_desc':
-        # Join with latest trend scores for sorting
-        subquery = db.session.query(
-            TrendScore.trend_id,
-            func.max(TrendScore.date_generated).label('latest_date')
-        ).group_by(TrendScore.trend_id).subquery()
         
-        latest_scores = db.session.query(
-            TrendScore.trend_id,
-            TrendScore.score
-        ).join(
-            subquery,
-            (TrendScore.trend_id == subquery.c.trend_id) &
-            (TrendScore.date_generated == subquery.c.latest_date)
-        ).subquery()
+        trends = trends_pagination.items
         
-        query = query.outerjoin(latest_scores, Trend.id == latest_scores.c.trend_id).order_by(
-            desc(latest_scores.c.score), desc(Trend.created_at)
-        )
-    elif sort_order == 'score_asc':
-        # Similar to above but ascending
-        subquery = db.session.query(
-            TrendScore.trend_id,
-            func.max(TrendScore.date_generated).label('latest_date')
-        ).group_by(TrendScore.trend_id).subquery()
+        # Prepare trend data with scores and summaries
+        trend_data = []
+        for trend in trends:
+            score_history = trend.get_score_history(7)
+            trend_data.append({
+                'trend': trend,
+                'latest_score': trend.get_latest_score(),
+                'score_history': score_history,
+                'summary': truncate_text(trend.description, 2) if trend.description else ''
+            })
         
-        latest_scores = db.session.query(
-            TrendScore.trend_id,
-            TrendScore.score
-        ).join(
-            subquery,
-            (TrendScore.trend_id == subquery.c.trend_id) &
-            (TrendScore.date_generated == subquery.c.latest_date)
-        ).subquery()
-        
-        query = query.outerjoin(latest_scores, Trend.id == latest_scores.c.trend_id).order_by(
-            asc(latest_scores.c.score), desc(Trend.created_at)
-        )
-    elif sort_order == 'newest':
-        query = query.order_by(desc(Trend.created_at))
-    elif sort_order == 'oldest':
-        query = query.order_by(asc(Trend.created_at))
+        return render_template('index.html', 
+                             trends=trend_data,
+                             pagination=trends_pagination,
+                             search_query=search_query,
+                             date_filter=date_filter,
+                             sort_order=sort_order)
     
-    # Paginate results
-    trends_pagination = query.paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    
-    trends = trends_pagination.items
-    
-    # Prepare trend data with scores and summaries
-    trend_data = []
-    for trend in trends:
-        score_history = trend.get_score_history(7)
-        trend_data.append({
-            'trend': trend,
-            'latest_score': trend.get_latest_score(),
-            'score_history': score_history,
-            'summary': truncate_text(trend.description, 2) if trend.description else ''
-        })
-    
-    return render_template('index.html', 
-                         trends=trend_data,
-                         pagination=trends_pagination,
-                         search_query=search_query,
-                         date_filter=date_filter,
-                         sort_order=sort_order)
+    except Exception as e:
+        logger.error(f"Error in homepage route: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return a simple error page or fallback
+        return render_template('index.html', 
+                             trends=[],
+                             pagination=None,
+                             search_query='',
+                             date_filter='all',
+                             sort_order='score_desc',
+                             error_message="Unable to load trends. Please try again later.")
 
 @main_bp.route('/trend/<int:trend_id>')
 def trend_detail(trend_id):
