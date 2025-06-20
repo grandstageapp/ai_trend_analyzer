@@ -69,7 +69,7 @@
                         </div>
 
                         <!-- Date Filter -->
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label for="date_filter" class="form-label">
                                 <i class="material-icons me-1">date_range</i>
                                 Date Range
@@ -87,7 +87,7 @@
                         </div>
 
                         <!-- Sort Order -->
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label for="sort" class="form-label">
                                 <i class="material-icons me-1">sort</i>
                                 Sort By
@@ -103,16 +103,19 @@
                                 <option value="oldest" {% if sort_order == 'oldest' %}selected{% endif %}>Oldest</option>
                             </select>
                         </div>
-
-                        <!-- Clear Button (only show when filters are applied) -->
-                        <div class="col-md-2 d-flex align-items-end">
-                            {% if search_query or date_filter != 'all' or sort_order != 'score_desc' %}
-                            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary w-100">
+                    </form>
+                    
+                    <!-- Clear Button (separate row, only show when filters are applied) -->
+                    {% if search_query or date_filter != 'all' or sort_order != 'score_desc' %}
+                    <div class="row mt-3">
+                        <div class="col-12 text-end">
+                            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
                                 <i class="material-icons me-1">clear</i>
                                 Clear
                             </a>
-                            {% endif %}
                         </div>
+                    </div>
+                    {% endif %}
                     </form>
                 </div>
             </div>
