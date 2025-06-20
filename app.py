@@ -62,6 +62,13 @@ def create_app():
         delta = datetime.utcnow() - date
         return delta.days
     
+    @app.template_filter('markdown')
+    def markdown_filter(text):
+        """Convert Markdown text to HTML"""
+        if not text:
+            return ""
+        return markdown.markdown(text, extensions=['nl2br'])
+    
     # Register blueprints
     from routes import main_bp
     app.register_blueprint(main_bp)

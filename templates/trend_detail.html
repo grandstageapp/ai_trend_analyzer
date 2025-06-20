@@ -82,7 +82,7 @@
                 <div class="card-body">
                     {% if trend.description %}
                         <div class="trend-description">
-                            {{ trend.description|safe }}
+                            {{ trend.description|markdown|safe }}
                         </div>
                     {% else %}
                         <p class="text-muted">No detailed description available for this trend yet.</p>
