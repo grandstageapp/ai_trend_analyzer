@@ -180,33 +180,93 @@ def generate_content():
     try:
         data = request.get_json()
         trend_id = data.get('trend_id')
+        content_type = data.get('type', 'blog')  # blog, social, newsletter, outline
         
         if not trend_id:
             return jsonify({'error': 'Missing trend_id'}), 400
         
-        trend = Trend.query.get_or_404(trend_id)
+        # Generate content using dedicated service
+        from services.content_generation_service import ContentGenerationService
+        content_service = ContentGenerationService()
         
-        # Get related posts for context
-        related_posts = db.session.query(Post).join(PostTrend).filter(
-            PostTrend.trend_id == trend_id
-        ).limit(10).all()
+        if content_type == 'blog':
+            content = content_service.generate_blog_content(trend_id)
+        elif content_type == 'social':
+            platform = data.get('platform', 'general')
+            content = content_service.generate_social_media_content(trend_id, platform)
+        elif content_type == 'newsletter':
+            content = content_service.generate_email_newsletter_content(trend_id)
+        elif content_type == 'outline':
+            content = content_service.generate_content_outline(trend_id)
+        else:
+            return jsonify({'error': 'Invalid content type'}), 400
         
-        # Prepare context
-        context = f"Trend: {trend.title}\n"
-        context += f"Description: {trend.description}\n"
-        context += "Key points from social media discussions:\n"
-        for post in related_posts[:5]:
-            context += f"- {post.content[:150]}...\n"
-        
-        # Generate content
-        openai_service = OpenAIService()
-        blog_content = openai_service.generate_blog_content(context)
-        
-        return jsonify({'content': blog_content})
+        return jsonify({'content': content, 'type': content_type})
         
     except Exception as e:
         logger.error(f"Error generating content: {e}")
         return jsonify({'error': 'Failed to generate content'}), 500
+
+@main_bp.route('/api/generate-social', methods=['POST'])
+def generate_social_content():
+    """Generate social media content for a trend"""
+    try:
+        data = request.get_json()
+        trend_id = data.get('trend_id')
+        platform = data.get('platform', 'general')
+        
+        if not trend_id:
+            return jsonify({'error': 'Missing trend_id'}), 400
+        
+        from services.content_generation_service import ContentGenerationService
+        content_service = ContentGenerationService()
+        content = content_service.generate_social_media_content(trend_id, platform)
+        
+        return jsonify({'content': content, 'platform': platform})
+        
+    except Exception as e:
+        logger.error(f"Error generating social content: {e}")
+        return jsonify({'error': 'Failed to generate social content'}), 500
+
+@main_bp.route('/api/generate-newsletter', methods=['POST'])
+def generate_newsletter_content():
+    """Generate newsletter content for a trend"""
+    try:
+        data = request.get_json()
+        trend_id = data.get('trend_id')
+        
+        if not trend_id:
+            return jsonify({'error': 'Missing trend_id'}), 400
+        
+        from services.content_generation_service import ContentGenerationService
+        content_service = ContentGenerationService()
+        content = content_service.generate_email_newsletter_content(trend_id)
+        
+        return jsonify({'content': content})
+        
+    except Exception as e:
+        logger.error(f"Error generating newsletter content: {e}")
+        return jsonify({'error': 'Failed to generate newsletter content'}), 500
+
+@main_bp.route('/api/generate-outline', methods=['POST'])
+def generate_content_outline():
+    """Generate content outline for a trend"""
+    try:
+        data = request.get_json()
+        trend_id = data.get('trend_id')
+        
+        if not trend_id:
+            return jsonify({'error': 'Missing trend_id'}), 400
+        
+        from services.content_generation_service import ContentGenerationService
+        content_service = ContentGenerationService()
+        content = content_service.generate_content_outline(trend_id)
+        
+        return jsonify({'content': content})
+        
+    except Exception as e:
+        logger.error(f"Error generating content outline: {e}")
+        return jsonify({'error': 'Failed to generate content outline'}), 500
 
 @main_bp.route('/api/search-trends')
 def search_trends():

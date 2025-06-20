@@ -185,62 +185,7 @@ class OpenAIService:
             logger.error(f"Error in trend chat: {e}")
             return "I apologize, but I'm having trouble processing your question right now. Please try again."
     
-    def generate_blog_content(self, trend_context: str) -> str:
-        """
-        Generate sample blog content for a trend
-        
-        Args:
-            trend_context: Context about the trend and related posts
-            
-        Returns:
-            Generated blog post content (500 words or less)
-        """
-        try:
-            prompt = f"""
-            Write a compelling blog post about this AI/technology trend:
-            
-            {trend_context}
-            
-            Requirements:
-            - 400-500 words maximum
-            - Engaging headline-style title
-            - Clear introduction that hooks the reader
-            - Explain the trend in accessible language
-            - Include why it matters for businesses/professionals
-            - End with actionable insights or future outlook
-            - Professional but conversational tone
-            - Structure with clear paragraphs
-            
-            Format as a complete blog post ready for publication.
-            """
-            
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert content writer specializing in AI and technology topics for business audiences."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                temperature=0.7,
-                max_tokens=700
-            )
-            
-            response_content = response.choices[0].message.content
-            if not response_content:
-                logger.error("Empty response from OpenAI for blog content")
-                return "Unable to generate content at this time. Please try again later."
-            content = response_content.strip()
-            logger.info("Generated blog content successfully")
-            return content
-            
-        except Exception as e:
-            logger.error(f"Error generating blog content: {e}")
-            return "Unable to generate content at this time. Please try again later."
+
     
     def _create_trend_identification_prompt(self, post_contents: List[str]) -> str:
         """Create a prompt for trend identification"""
