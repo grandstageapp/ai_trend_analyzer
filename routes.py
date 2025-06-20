@@ -97,7 +97,7 @@ def index():
         # Prepare trend data with scores and summaries
         trend_data = []
         for trend in trends:
-            score_history = trend.get_score_history(7)
+            score_history = trend.get_score_history(10)
             trend_data.append({
                 'trend': trend,
                 'latest_score': trend.get_latest_score(),
@@ -142,7 +142,7 @@ def trend_detail(trend_id):
     trend = Trend.query.get_or_404(trend_id)
     
     # Get trend score history
-    score_history = trend.get_score_history(30)  # Last 30 days
+    score_history = trend.get_score_history(10)  # Last 10 days
     
     # Get related posts
     related_posts = db.session.query(Post).join(PostTrend).filter(

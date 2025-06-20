@@ -295,7 +295,7 @@
         // Prepare chart data
         const labels = scoreHistory.map(item => {
             const date = new Date(item[0]);
-            return date.toLocaleDateString();
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
         
         const data = scoreHistory.map(item => item[1]);
