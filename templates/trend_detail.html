@@ -90,53 +90,8 @@
                 </div>
             </div>
 
-            <!-- Related Posts -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="material-icons me-2">forum</i>
-                        Related Posts
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if related_posts %}
-                        <div class="row">
-                            {% for post in related_posts %}
-                            <div class="col-md-6 mb-3">
-                                <div class="border rounded p-3 h-100">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <strong class="text-primary">@{{ post.author.username }}</strong>
-                                        <small class="text-muted ms-auto">
-                                            {{ post.publish_date.strftime('%b %d, %Y') }}
-                                        </small>
-                                    </div>
-                                    <p class="mb-2">{{ post.content|truncate(150) }}</p>
-                                    <div class="d-flex gap-3 text-muted small">
-                                        {% set latest_engagement = post.engagements|last %}
-                                        {% if latest_engagement %}
-                                            <span>
-                                                <i class="material-icons me-1">favorite</i>
-                                                {{ latest_engagement.like_count }}
-                                            </span>
-                                            <span>
-                                                <i class="material-icons me-1">comment</i>
-                                                {{ latest_engagement.comment_count }}
-                                            </span>
-                                            <span>
-                                                <i class="material-icons me-1">repeat</i>
-                                                {{ latest_engagement.repost_count }}
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No related posts available.</p>
-                    {% endif %}
-                </div>
-            </div>
+            <!-- AI Chat Interface -->
+            {% include 'components/chat_interface.html' %}
         </div>
 
         <!-- Sidebar -->
@@ -183,8 +138,68 @@
                 </div>
             </div>
 
-            <!-- AI Chat Interface -->
-            {% include 'components/chat_interface.html' %}
+            <!-- Related Posts Slider -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons me-2">forum</i>
+                        Related Posts
+                        {% if related_posts %}
+                            <span class="badge bg-primary ms-2">{{ related_posts|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if related_posts %}
+                        <div id="relatedPostsCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                {% for post in related_posts %}
+                                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                    <div class="border rounded p-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <strong class="text-primary">@{{ post.author.username }}</strong>
+                                            <small class="text-muted ms-auto">
+                                                {{ post.publish_date.strftime('%b %d, %Y') }}
+                                            </small>
+                                        </div>
+                                        <p class="mb-2 small">{{ post.content|truncate(120) }}</p>
+                                        <div class="d-flex gap-2 text-muted small">
+                                            {% set latest_engagement = post.engagements|last %}
+                                            {% if latest_engagement %}
+                                                <span>
+                                                    <i class="material-icons me-1" style="font-size: 14px;">favorite</i>
+                                                    {{ latest_engagement.like_count }}
+                                                </span>
+                                                <span>
+                                                    <i class="material-icons me-1" style="font-size: 14px;">comment</i>
+                                                    {{ latest_engagement.comment_count }}
+                                                </span>
+                                                <span>
+                                                    <i class="material-icons me-1" style="font-size: 14px;">repeat</i>
+                                                    {{ latest_engagement.repost_count }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if related_posts|length > 1 %}
+                            <button class="carousel-control-prev" type="button" data-bs-target="#relatedPostsCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon bg-dark rounded" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#relatedPostsCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon bg-dark rounded" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted small">No related posts available.</p>
+                    {% endif %}
+                </div>
+            </div>
 
             <!-- Content Generation -->
             <div class="card shadow-sm">
