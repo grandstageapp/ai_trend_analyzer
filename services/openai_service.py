@@ -32,7 +32,7 @@ class OpenAIService:
         """
         try:
             response = self.client.embeddings.create(
-                model="text-embedding-3-small",
+                model="text-embedding-3-large",
                 input=texts
             )
             
@@ -80,7 +80,11 @@ class OpenAIService:
                 temperature=0.3
             )
             
-            result = json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content
+            if not content:
+                logger.error("Empty response from OpenAI")
+                return []
+            result = json.loads(content)
             trends = result.get('trends', [])
             
             logger.info(f"Identified {len(trends)} trends from {len(posts)} posts")
@@ -133,7 +137,8 @@ class OpenAIService:
                 temperature=0.4
             )
             
-            description = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            description = content.strip() if content else ""
             logger.info(f"Generated description for trend: {trend_title}")
             return description
             
@@ -173,7 +178,8 @@ class OpenAIService:
                 max_tokens=500
             )
             
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            return content.strip() if content else "I apologize, but I'm having trouble processing your question right now. Please try again."
             
         except Exception as e:
             logger.error(f"Error in trend chat: {e}")

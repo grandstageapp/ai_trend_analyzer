@@ -33,5 +33,8 @@ class Config:
     }
     
     # Background task intervals
-    FETCH_POSTS_INTERVAL = timedelta(hours=4)
+    FETCH_POSTS_INTERVAL = timedelta(hours=24)
     CALCULATE_TRENDS_INTERVAL = timedelta(hours=24)
+    
+    # Data limits
+    MAX_POSTS_PER_DAY = 20

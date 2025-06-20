@@ -43,7 +43,9 @@ def create_app():
         
         # Enable PGVector extension
         try:
-            db.engine.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            with db.engine.connect() as conn:
+                conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                conn.commit()
             logger.info("PGVector extension enabled")
         except Exception as e:
             logger.warning(f"Could not enable PGVector extension: {e}")

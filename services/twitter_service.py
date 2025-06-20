@@ -26,7 +26,7 @@ class TwitterService:
             "Content-Type": "application/json"
         }
     
-    def search_recent_posts(self, search_terms: List[str], max_results: int = 100) -> List[Dict[str, Any]]:
+    def search_recent_posts(self, search_terms: List[str], max_results: int = 20) -> List[Dict[str, Any]]:
         """
         Search for recent posts using the Recent Search API endpoint
         

@@ -1,0 +1,47 @@
+Below are responses to your questions, nestled under each question prefixed by “---”:
+
+
+Technical Questions
+
+
+X/Twitter API Access: Do you have X/Twitter API credentials (API Key, API Secret, Bearer Token, Access Tokens)? The recent changes to X's API pricing and access levels can affect what endpoints are available.
+---Yes, I will provide when prompted.
+
+OpenAI Model Preferences: While the PRD mentions using OpenAI, do you have any specific preferences for:
+
+Which embedding model to use (text-embedding-3-small vs text-embedding-3-large)?
+--- text-embedding-3-large
+
+Token limits or cost considerations for the chat and content generation features?
+--- Not at this time.
+
+PGVector Extension: The application requires the PGVector extension for PostgreSQL. Should I include the setup instructions for this extension, or do you need me to implement a fallback approach?
+--- You will perform all of the installation and configuration of PGVector.
+
+Requirements Questions
+
+Data Volume Expectations: How many posts do you expect to process daily? This affects database design and background task frequency.
+--- Set a limit to 20 per day for the purpose of this app.
+
+User Authentication: The PRD doesn't mention user accounts or authentication. Should this be a single-user application, or do you need multi-user support with login functionality?
+--- This will be a public facing app, no authentication needed. 
+
+Content Moderation: Should there be any filtering or moderation of the social media content being analyzed (e.g., filtering out inappropriate content)?
+--- Not at this time.
+
+Search Terms Configuration: The PRD lists specific AI-related search terms. Do you want these to be configurable through an admin interface, or is a hardcoded list sufficient?
+--- Terms will be hardcoded for now.
+
+Implementation Questions
+
+Background Task Scheduling: For the 4-hour post fetching and 24-hour trend analysis tasks, do you prefer a simple cron-job approach or should I implement a more robust task queue system like Celery?
+--- Simple chron job is appropriate for now. And, the requirements indicate posts should only be fetched every 24 hours.
+
+Error Handling for API Failures: How should the application handle situations where the X API is down or rate-limited? Should it queue requests, skip cycles, or notify administrators?
+--- Queue requests.
+
+Deployment Environment: Are you planning to deploy this on a specific platform (AWS, GCP, Heroku, etc.) that might influence the architecture decisions?
+--- This will be hosted on Replit for now.
+
+Performance Requirements: Do you have specific performance expectations for page load times, search response times, or the number of concurrent users?
+--- Make the application super fast. I will leave it to you to determine how and the appropriate benchmarks.
