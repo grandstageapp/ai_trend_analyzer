@@ -1,0 +1,37 @@
+import os
+from datetime import timedelta
+
+class Config:
+    """Base configuration"""
+    SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://localhost/ai_trends')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # API Keys
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    X_API_KEY = os.environ.get('X_API_KEY')
+    X_API_SECRET = os.environ.get('X_API_SECRET')
+    X_ACCESS_TOKEN = os.environ.get('X_ACCESS_TOKEN')
+    X_ACCESS_TOKEN_SECRET = os.environ.get('X_ACCESS_TOKEN_SECRET')
+    X_BEARER_TOKEN = os.environ.get('X_BEARER_TOKEN')
+    
+    # Search configuration
+    AI_SEARCH_TERMS = [
+        "AI", "artificial intelligence", "OpenAI", "ChatGPT", "GPT-4", "GPT-5",
+        "machine learning", "ML", "deep learning", "neural networks", "LLM",
+        "large language model", "generative AI", "AGI", "artificial general intelligence",
+        "Anthropic", "Claude", "Google AI", "Bard", "Gemini", "Microsoft AI",
+        "computer vision", "natural language processing", "NLP", "automation",
+        "robotics", "AI ethics", "AI safety", "prompt engineering"
+    ]
+    
+    # Trend scoring weights
+    TREND_SCORE_WEIGHTS = {
+        'like_weight': 1.0,
+        'comment_weight': 1.1,
+        'repost_weight': 1.2
+    }
+    
+    # Background task intervals
+    FETCH_POSTS_INTERVAL = timedelta(hours=4)
+    CALCULATE_TRENDS_INTERVAL = timedelta(hours=24)

@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}AI Trends Dashboard - AI Trends Analyzer{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-primary bg-gradient text-white rounded p-4 mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="display-5 mb-2">
+                            <i class="material-icons fs-1 me-3">insights</i>
+                            AI Trends Dashboard
+                        </h1>
+                        <p class="lead mb-0">
+                            Discover trending AI topics and conversations from across the web
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <div class="d-flex flex-column gap-2">
+                            <div class="badge bg-light text-dark fs-6">
+                                <i class="material-icons me-1">schedule</i>
+                                Updated every 4 hours
+                            </div>
+                            <div class="badge bg-light text-dark fs-6">
+                                <i class="material-icons me-1">analytics</i>
+                                {{ trends|length }} trends identified
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="GET" class="row g-3" id="filterForm">
+                        <!-- Search Input -->
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">
+                                <i class="material-icons me-1">search</i>
+                                Search Trends
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="search" 
+                                name="search" 
+                                value="{{ search_query }}"
+                                placeholder="Search by title or description..."
+                                hx-get="{{ url_for('main.search_trends') }}"
+                                hx-target="#trendsContainer"
+                                hx-trigger="keyup changed delay:500ms"
+                                hx-indicator="#searchSpinner"
+                            >
+                            <div id="searchSpinner" class="htmx-indicator">
+                                <small class="text-muted">
+                                    <div class="spinner-border spinner-border-sm me-1" role="status"></div>
+                                    Searching...
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Date Filter -->
+                        <div class="col-md-2">
+                            <label for="date_filter" class="form-label">
+                                <i class="material-icons me-1">date_range</i>
+                                Date Range
+                            </label>
+                            <select class="form-select" id="date_filter" name="date_filter" onchange="document.getElementById('filterForm').submit()">
+                                <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
+                                <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                                <option value="week" {% if date_filter == 'week' %}selected{% endif %}>This Week</option>
+                                <option value="month" {% if date_filter == 'month' %}selected{% endif %}>This Month</option>
+                            </select>
+                        </div>
+
+                        <!-- Sort Order -->
+                        <div class="col-md-2">
+                            <label for="sort" class="form-label">
+                                <i class="material-icons me-1">sort</i>
+                                Sort By
+                            </label>
+                            <select class="form-select" id="sort" name="sort" onchange="document.getElementById('filterForm').submit()">
+                                <option value="score_desc" {% if sort_order == 'score_desc' %}selected{% endif %}>Highest Score</option>
+                                <option value="score_asc" {% if sort_order == 'score_asc' %}selected{% endif %}>Lowest Score</option>
+                                <option value="newest" {% if sort_order == 'newest' %}selected{% endif %}>Newest</option>
+                                <option value="oldest" {% if sort_order == 'oldest' %}selected{% endif %}>Oldest</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-md-4 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="material-icons me-1">filter_list</i>
+                                Apply Filters
+                            </button>
+                            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+                                <i class="material-icons me-1">clear</i>
+                                Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trends Grid -->
+    <div class="row" id="trendsContainer">
+        {% if trends %}
+            {% for trend_item in trends %}
+                {% include 'components/trend_card.html' %}
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="material-icons display-1 text-muted">search_off</i>
+                    <h3 class="text-muted mt-3">No trends found</h3>
+                    <p class="text-muted">
+                        {% if search_query %}
+                            No trends match your search criteria. Try adjusting your filters.
+                        {% else %}
+                            No trends available yet. The system may still be collecting data.
+                        {% endif %}
+                    </p>
+                    {% if not search_query %}
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i class="material-icons me-1">refresh</i>
+                            Refresh Page
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Trends pagination">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.index', page=pagination.prev_num, search=search_query, date_filter=date_filter, sort=sort_order) }}">
+                                <i class="material-icons">chevron_left</i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in pagination.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != pagination.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.index', page=page_num, search=search_query, date_filter=date_filter, sort=sort_order) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.index', page=pagination.next_num, search=search_query, date_filter=date_filter, sort=sort_order) }}">
+                                <i class="material-icons">chevron_right</i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            <div class="text-center text-muted">
+                <small>
+                    Showing {{ pagination.per_page * (pagination.page - 1) + 1 }} to 
+                    {{ pagination.per_page * pagination.page if pagination.page < pagination.pages else pagination.total }} 
+                    of {{ pagination.total }} trends
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize trend cards animations
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate cards on load
+        const cards = document.querySelectorAll('.trend-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.4s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+
+    // Handle HTMX events
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        document.getElementById('loadingOverlay').classList.remove('d-none');
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        document.getElementById('loadingOverlay').classList.add('d-none');
+    });
+
+    // Auto-refresh functionality
+    let autoRefreshInterval;
+    
+    function startAutoRefresh() {
+        autoRefreshInterval = setInterval(() => {
+            if (!document.hidden) {
+                location.reload();
+            }
+        }, 300000); // Refresh every 5 minutes
+    }
+    
+    function stopAutoRefresh() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+    }
+    
+    // Start auto-refresh
+    startAutoRefresh();
+    
+    // Pause auto-refresh when tab is not visible
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopAutoRefresh();
+        } else {
+            startAutoRefresh();
+        }
+    });
+</script>
+{% endblock %}

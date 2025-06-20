@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}{{ trend.title }} - AI Trends Analyzer{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.index') }}">
+                    <i class="material-icons me-1">dashboard</i>
+                    Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active">{{ trend.title }}</li>
+        </ol>
+    </nav>
+
+    <!-- Trend Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="card-title mb-3">
+                                <i class="material-icons text-primary me-2">trending_up</i>
+                                {{ trend.title }}
+                            </h1>
+                            <div class="d-flex flex-wrap gap-3 mb-3">
+                                <span class="badge bg-primary fs-6">
+                                    <i class="material-icons me-1">article</i>
+                                    {{ trend.total_posts }} Posts
+                                </span>
+                                <span class="badge bg-success fs-6">
+                                    <i class="material-icons me-1">star</i>
+                                    Score: {{ "%.2f"|format(trend.get_latest_score()) }}
+                                </span>
+                                <span class="badge bg-info fs-6">
+                                    <i class="material-icons me-1">schedule</i>
+                                    {{ trend.created_at.strftime('%B %d, %Y') }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <button class="btn btn-outline-primary mb-2" onclick="shareTrend()">
+                                <i class="material-icons me-1">share</i>
+                                Share Trend
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Trend Score Chart -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons me-2">show_chart</i>
+                        Trend Score Over Time
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendScoreChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Trend Description -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons me-2">description</i>
+                        About This Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if trend.description %}
+                        <div class="trend-description">
+                            {{ trend.description|safe }}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No detailed description available for this trend yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Posts -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons me-2">forum</i>
+                        Related Posts
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if related_posts %}
+                        <div class="row">
+                            {% for post in related_posts %}
+                            <div class="col-md-6 mb-3">
+                                <div class="border rounded p-3 h-100">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong class="text-primary">@{{ post.author.username }}</strong>
+                                        <small class="text-muted ms-auto">
+                                            {{ post.publish_date.strftime('%b %d, %Y') }}
+                                        </small>
+                                    </div>
+                                    <p class="mb-2">{{ post.content|truncate(150) }}</p>
+                                    <div class="d-flex gap-3 text-muted small">
+                                        {% set latest_engagement = post.engagements|last %}
+                                        {% if latest_engagement %}
+                                            <span>
+                                                <i class="material-icons me-1">favorite</i>
+                                                {{ latest_engagement.like_count }}
+                                            </span>
+                                            <span>
+                                                <i class="material-icons me-1">comment</i>
+                                                {{ latest_engagement.comment_count }}
+                                            </span>
+                                            <span>
+                                                <i class="material-icons me-1">repeat</i>
+                                                {{ latest_engagement.repost_count }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No related posts available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Stats -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons me-2">analytics</i>
+                        Quick Stats
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border-end">
+                                <h3 class="text-primary mb-1">{{ trend.total_posts }}</h3>
+                                <small class="text-muted">Total Posts</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h3 class="text-success mb-1">{{ "%.1f"|format(trend.get_latest_score()) }}</h3>
+                            <small class="text-muted">Current Score</small>
+                        </div>
+                    </div>
+                    
+                    {% if total_engagement %}
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-danger mb-1">{{ total_engagement.total_likes or 0 }}</h4>
+                            <small class="text-muted">Total Likes</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info mb-1">{{ total_engagement.total_comments or 0 }}</h4>
+                            <small class="text-muted">Comments</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning mb-1">{{ total_engagement.total_reposts or 0 }}</h4>
+                            <small class="text-muted">Reposts</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- AI Chat Interface -->
+            {% include 'components/chat_interface.html' %}
+
+            <!-- Content Generation -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="material-icons me-2">auto_awesome</i>
+                        Content Generation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Generate sample blog content based on this trend for your content creation needs.
+                    </p>
+                    <button 
+                        class="btn btn-primary w-100" 
+                        onclick="generateContent({{ trend.id }})"
+                        id="generateContentBtn"
+                    >
+                        <i class="material-icons me-1">create</i>
+                        Generate Sample Content
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generated Content Modal -->
+    <div class="modal fade" id="contentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="material-icons me-2">article</i>
+                        Generated Content
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="generatedContent" class="content-preview">
+                        <!-- Generated content will be inserted here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="copyContent()">
+                        <i class="material-icons me-1">content_copy</i>
+                        Copy Content
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+    // Initialize trend score chart
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('trendScoreChart').getContext('2d');
+        const scoreHistory = {{ score_history|safe }};
+        
+        // Prepare chart data
+        const labels = scoreHistory.map(item => {
+            const date = new Date(item[0]);
+            return date.toLocaleDateString();
+        });
+        
+        const data = scoreHistory.map(item => item[1]);
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Trend Score',
+                    data: data,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Score'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    // Generate content function
+    function generateContent(trendId) {
+        const btn = document.getElementById('generateContentBtn');
+        const originalText = btn.innerHTML;
+        
+        // Show loading state
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>Generating...';
+        
+        fetch('/api/generate-content', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                trend_id: trendId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+            } else {
+                document.getElementById('generatedContent').innerHTML = 
+                    '<pre class="bg-light p-3 rounded">' + data.content + '</pre>';
+                const modal = new bootstrap.Modal(document.getElementById('contentModal'));
+                modal.show();
+            }
+        })
+        .catch(error => {
+            showError('Failed to generate content. Please try again.');
+        })
+        .finally(() => {
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    }
+
+    // Copy content function
+    function copyContent() {
+        const content = document.getElementById('generatedContent').textContent;
+        navigator.clipboard.writeText(content).then(() => {
+            showSuccess('Content copied to clipboard!');
+        }).catch(() => {
+            showError('Failed to copy content to clipboard.');
+        });
+    }
+
+    // Share trend function
+    function shareTrend() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ trend.title }} - AI Trends Analyzer',
+                text: 'Check out this trending AI topic: {{ trend.title }}',
+                url: window.location.href
+            });
+        } else {
+            // Fallback: copy URL to clipboard
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showSuccess('Trend URL copied to clipboard!');
+            }).catch(() => {
+                showError('Failed to copy URL to clipboard.');
+            });
+        }
+    }
+
+    // Initialize chat interface
+    initializeChatInterface({{ trend.id }});
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% for trend_item in trends %}
+<div class="col-lg-4 col-md-6 mb-4">
+    <div class="card trend-card h-100 shadow-sm">
+        <div class="card-body d-flex flex-column">
+            <!-- Card Header -->
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h5 class="card-title mb-0">
+                    <a href="{{ url_for('main.trend_detail', trend_id=trend_item.trend.id) }}" 
+                       class="text-decoration-none">
+                        {{ trend_item.trend.title }}
+                    </a>
+                </h5>
+                <span class="badge bg-primary ms-2">
+                    {{ "%.1f"|format(trend_item.latest_score) }}
+                </span>
+            </div>
+
+            <!-- Trend Summary -->
+            <div class="flex-grow-1 mb-3">
+                {% if trend_item.summary %}
+                    <p class="card-text text-muted">{{ trend_item.summary }}</p>
+                {% else %}
+                    <p class="card-text text-muted">
+                        Trending topic based on {{ trend_item.trend.total_posts }} posts
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Stats Row -->
+            <div class="row text-center mb-3">
+                <div class="col-4">
+                    <small class="text-muted d-block">Posts</small>
+                    <strong class="text-primary">{{ trend_item.trend.total_posts }}</strong>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted d-block">Score</small>
+                    <strong class="text-success">{{ "%.1f"|format(trend_item.latest_score) }}</strong>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted d-block">Age</small>
+                    <strong class="text-info">
+                        {% set days_old = (moment().date() - trend_item.trend.created_at.date()).days %}
+                        {% if days_old == 0 %}
+                            Today
+                        {% elif days_old == 1 %}
+                            1 day
+                        {% else %}
+                            {{ days_old }} days
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+
+            <!-- Mini Chart -->
+            {% if trend_item.score_history|length > 1 %}
+            <div class="mb-3">
+                <canvas 
+                    class="trend-mini-chart" 
+                    data-scores="{{ trend_item.score_history|map(attribute='1')|list|join(',') }}"
+                    width="100" 
+                    height="40"
+                ></canvas>
+            </div>
+            {% endif %}
+
+            <!-- Card Footer -->
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="material-icons me-1" style="font-size: 16px;">schedule</i>
+                    {{ trend_item.trend.created_at.strftime('%b %d, %Y') }}
+                </small>
+                <a href="{{ url_for('main.trend_detail', trend_id=trend_item.trend.id) }}" 
+                   class="btn btn-sm btn-outline-primary">
+                    <i class="material-icons me-1" style="font-size: 16px;">visibility</i>
+                    View Details
+                </a>
+            </div>
+        </div>
+
+        <!-- Hover Effect Overlay -->
+        <div class="card-hover-overlay">
+            <div class="hover-content">
+                <h6 class="mb-2">{{ trend_item.trend.title }}</h6>
+                <p class="small mb-3">
+                    {% if trend_item.trend.description %}
+                        {{ trend_item.trend.description[:100] }}...
+                    {% else %}
+                        Explore this trending AI topic in detail
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('main.trend_detail', trend_id=trend_item.trend.id) }}" 
+                   class="btn btn-primary btn-sm">
+                    <i class="material-icons me-1">arrow_forward</i>
+                    Explore Trend
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Handle empty state when called via HTMX -->
+{% if not trends %}
+<div class="col-12">
+    <div class="text-center py-4">
+        <i class="material-icons display-4 text-muted">search_off</i>
+        <h5 class="text-muted mt-2">No matching trends found</h5>
+        <p class="text-muted">Try adjusting your search terms or filters.</p>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Initialize mini charts for trend cards
+document.addEventListener('DOMContentLoaded', function() {
+    const miniCharts = document.querySelectorAll('.trend-mini-chart');
+    
+    miniCharts.forEach(canvas => {
+        const scores = canvas.dataset.scores.split(',').map(Number);
+        if (scores.length < 2) return;
+        
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: scores.map((_, i) => i),
+                datasets: [{
+                    data: scores,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    borderWidth: 1,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                elements: {
+                    point: { radius: 0 }
+                }
+            }
+        });
+    });
+});
+</script>

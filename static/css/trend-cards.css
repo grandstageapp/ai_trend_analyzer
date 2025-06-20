@@ -1,0 +1,354 @@
+/* Trend Cards Specific Styles */
+
+.trend-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.trend-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color);
+}
+
+.trend-card .card-body {
+  padding: 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.trend-card .card-title a {
+  color: var(--dark-color);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+  display: block;
+  line-height: 1.3;
+}
+
+.trend-card .card-title a:hover {
+  color: var(--primary-color);
+}
+
+.trend-card .card-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #6c757d;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 4.8rem;
+}
+
+/* Trend Score Badge */
+.trend-card .badge {
+  position: relative;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 50px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #0b5ed7 100%);
+  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(13, 110, 253, 0.5);
+  }
+  100% {
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+  }
+}
+
+/* Stats Row */
+.trend-card .row.text-center {
+  background: rgba(248, 249, 250, 0.8);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0;
+  margin: 0 -0.5rem;
+}
+
+.trend-card .row.text-center strong {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.trend-card .row.text-center small {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Mini Chart Container */
+.trend-mini-chart {
+  background: rgba(25, 135, 84, 0.05);
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(25, 135, 84, 0.1);
+}
+
+/* Card Footer */
+.trend-card .d-flex.justify-content-between {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.trend-card .btn-outline-primary {
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-width: 1.5px;
+  transition: all 0.3s ease;
+}
+
+.trend-card .btn-outline-primary:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+}
+
+/* Hover Overlay */
+.card-hover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.95) 0%, rgba(11, 94, 215, 0.95) 100%);
+  color: white;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+  z-index: 3;
+}
+
+.trend-card:hover .card-hover-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.hover-content h6 {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.hover-content p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hover-content .btn {
+  background: white;
+  color: var(--primary-color);
+  border: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.hover-content .btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Card States */
+.trend-card.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.trend-card.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2rem;
+  height: 2rem;
+  margin: -1rem 0 0 -1rem;
+  border: 3px solid rgba(13, 110, 253, 0.3);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 4;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* New/Updated Indicators */
+.trend-card.new-trend::before {
+  content: 'NEW';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--success-color);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  z-index: 2;
+  animation: bounce 1s ease-in-out;
+}
+
+.trend-card.updated-trend::before {
+  content: 'UPDATED';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--warning-color);
+  color: var(--dark-color);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  z-index: 2;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Trend Score Categories */
+.trend-card[data-score="high"] .badge {
+  background: linear-gradient(135deg, var(--success-color) 0%, #157347 100%);
+  box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
+}
+
+.trend-card[data-score="medium"] .badge {
+  background: linear-gradient(135deg, var(--warning-color) 0%, #e0a800 100%);
+  color: var(--dark-color);
+  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+}
+
+.trend-card[data-score="low"] .badge {
+  background: linear-gradient(135deg, var(--secondary-color) 0%, #5a6268 100%);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+}
+
+/* Responsive Design for Trend Cards */
+@media (max-width: 1400px) {
+  .trend-card .card-body {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .trend-card {
+    margin-bottom: 1.5rem;
+  }
+  
+  .trend-card:hover {
+    transform: translateY(-4px) scale(1.01);
+  }
+}
+
+@media (max-width: 768px) {
+  .trend-card .card-body {
+    padding: 1rem;
+  }
+  
+  .trend-card .card-text {
+    min-height: 3.6rem;
+    -webkit-line-clamp: 2;
+  }
+  
+  .card-hover-overlay {
+    display: none;
+  }
+  
+  .trend-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 576px) {
+  .trend-card .row.text-center {
+    padding: 0.5rem 0;
+  }
+  
+  .trend-card .row.text-center strong {
+    font-size: 1rem;
+  }
+  
+  .trend-card .row.text-center small {
+    font-size: 0.75rem;
+  }
+  
+  .trend-card .btn-outline-primary {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+  }
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+  .trend-card {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+  }
+  
+  .trend-card .card-title a {
+    color: #e2e8f0;
+  }
+  
+  .trend-card .card-text {
+    color: #a0aec0;
+  }
+  
+  .trend-card .row.text-center {
+    background: rgba(45, 55, 72, 0.8);
+  }
+}
+
+/* Print Styles for Trend Cards */
+@media print {
+  .trend-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+    background: white;
+    margin-bottom: 1rem;
+  }
+  
+  .card-hover-overlay,
+  .trend-card .btn {
+    display: none;
+  }
+  
+  .trend-card .badge {
+    color: #000;
+    background: #f0f0f0;
+    box-shadow: none;
+  }
+}

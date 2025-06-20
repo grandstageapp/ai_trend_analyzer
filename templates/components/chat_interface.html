@@ -1,0 +1,143 @@
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="material-icons me-2">chat</i>
+            Ask About This Trend
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <!-- Chat Messages Container -->
+        <div id="chatMessages" class="chat-messages p-3" style="height: 300px; overflow-y: auto;">
+            <div class="chat-message system-message">
+                <div class="message-content">
+                    <small class="text-muted">
+                        <i class="material-icons me-1">info</i>
+                        Ask me anything about this trend! I can help explain concepts, provide context, or discuss implications.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="border-top p-3">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    id="chatInput" 
+                    placeholder="Ask a question about this trend..."
+                    onkeypress="handleChatKeyPress(event)"
+                >
+                <button 
+                    class="btn btn-primary" 
+                    type="button" 
+                    onclick="sendChatMessage()"
+                    id="sendChatBtn"
+                >
+                    <i class="material-icons">send</i>
+                </button>
+            </div>
+            
+            <!-- Quick Questions -->
+            <div class="mt-2">
+                <small class="text-muted d-block mb-1">Quick questions:</small>
+                <div class="d-flex flex-wrap gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="askQuickQuestion('What is this trend about?')">
+                        What is this?
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="askQuickQuestion('Why is this trending?')">
+                        Why trending?
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="askQuickQuestion('What are the business implications?')">
+                        Business impact?
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-messages {
+    background-color: #f8f9fa;
+}
+
+.chat-message {
+    margin-bottom: 1rem;
+}
+
+.chat-message.user-message {
+    text-align: right;
+}
+
+.chat-message.ai-message {
+    text-align: left;
+}
+
+.message-content {
+    display: inline-block;
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    word-wrap: break-word;
+}
+
+.user-message .message-content {
+    background-color: #0d6efd;
+    color: white;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.ai-message .message-content {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.system-message .message-content {
+    background-color: #e9ecef;
+    color: #6c757d;
+    border-radius: 0.5rem;
+    max-width: 100%;
+    text-align: center;
+}
+
+.typing-indicator {
+    display: none;
+    padding: 0.5rem 1rem;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 1rem;
+    max-width: 80px;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 2px;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #6c757d;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-10px);
+    }
+}
+</style>
