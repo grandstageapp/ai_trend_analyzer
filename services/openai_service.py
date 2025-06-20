@@ -120,6 +120,12 @@ class OpenAIService:
             
             Keep the description informative but accessible to non-technical readers.
             Aim for 200-400 words.
+            
+            **IMPORTANT: Format your response in Markdown with:**
+            - Use ## for section headers
+            - Use **bold** for emphasis
+            - Use bullet points (-) for lists
+            - Use line breaks between paragraphs for better readability
             """
             
             response = self.client.chat.completions.create(
