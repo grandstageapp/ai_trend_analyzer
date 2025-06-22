@@ -83,7 +83,11 @@ class BackgroundTasks:
                     if stored_posts:
                         # Analyze trends from new posts
                         logger.info(f"[{self.correlation_id}] Starting trend analysis...")
-                        self._analyze_and_create_trends(stored_posts)
+                        try:
+                            self.service_manager.trend_service.analyze_and_create_trends(stored_posts)
+                            logger.info(f"[{self.correlation_id}] Trend analysis completed")
+                        except Exception as e:
+                            logger.warning(f"[{self.correlation_id}] Trend analysis failed: {e}")
                         
                         # Calculate trend scores
                         logger.info(f"[{self.correlation_id}] Calculating trend scores...")
