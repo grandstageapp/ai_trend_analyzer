@@ -43,36 +43,25 @@ def create_app():
         # Import models to ensure tables are created
         import models
         
-        # Create tables with retry logic for deployment
-        max_retries = 3
-        retry_delay = 2
-        
-        for attempt in range(max_retries):
+        # Lazy database initialization for faster startup
+        try:
+            # Create all tables
+            db.create_all()
+            
+            # Enable PGVector extension
             try:
-                # Create all tables
-                db.create_all()
-                
-                # Enable PGVector extension
-                try:
-                    with db.engine.connect() as conn:
-                        conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
-                        conn.commit()
-                    logger.info("PGVector extension enabled")
-                except Exception as e:
-                    logger.warning(f"Could not enable PGVector extension: {e}")
-                
-                logger.info(f"Database initialized successfully on attempt {attempt + 1}")
-                break
-                
+                with db.engine.connect() as conn:
+                    conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                    conn.commit()
+                logger.info("PGVector extension enabled")
             except Exception as e:
-                logger.warning(f"Database initialization attempt {attempt + 1} failed: {e}")
-                if attempt < max_retries - 1:
-                    import time
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                else:
-                    logger.error(f"Database initialization failed after {max_retries} attempts")
-                    # Continue without failing - health checks will handle this
+                logger.warning(f"Could not enable PGVector extension: {e}")
+            
+            logger.info("Database initialized successfully on attempt 1")
+                
+        except Exception as e:
+            logger.warning(f"Database initialization failed: {e}")
+            # Continue without failing - health checks will handle this
     
     # Register custom template filters
     from datetime import datetime
