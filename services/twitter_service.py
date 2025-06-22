@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from config import Config
@@ -88,9 +89,19 @@ class TwitterService:
             
             if response.status_code == 200:
                 data = response.json()
+                
+                # Log raw API response for debugging
+                logger.debug(f"Raw Twitter API response: {json.dumps(data, indent=2)}")
+                
                 if 'data' not in data:
                     logger.warning("No data returned from Twitter API - possibly no matching tweets")
                     return []
+                    
+                # Log first tweet's raw data for debugging
+                if data.get('data') and len(data['data']) > 0:
+                    first_tweet = data['data'][0]
+                    logger.info(f"Sample tweet raw data: {json.dumps(first_tweet, indent=2)}")
+                
                 posts = self._process_search_response(data)
                 logger.info(f"Retrieved {len(posts)} posts from Twitter")
                 return posts
