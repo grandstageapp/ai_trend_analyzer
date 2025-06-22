@@ -29,17 +29,12 @@ class BackgroundTasks:
                 # Skip rate limit check to avoid consuming quota
                 # The search_recent_posts function will handle rate limiting internally
                 
-                # Fetch recent posts from Twitter (API minimum is 10 results)
+                # Fetch recent posts from Twitter
                 logger.info(f"Fetching posts with terms: {self.config.AI_SEARCH_TERMS[:3]}...")
                 posts_data = self.twitter_service.search_recent_posts(
                     search_terms=self.config.AI_SEARCH_TERMS[:3],  # Limit terms for testing
-                    max_results=10  # API minimum is 10, we'll limit processing to 3
+                    max_results=10  # API minimum is 10
                 )
-                
-                # Limit processing to 3 posts for testing
-                if len(posts_data) > 3:
-                    posts_data = posts_data[:3]
-                    logger.info(f"Limited processing to 3 posts from {len(posts_data)} retrieved")
                 
                 logger.info(f"API returned {len(posts_data)} posts")
                 
