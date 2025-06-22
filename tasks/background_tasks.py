@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import List
 from app import db, create_app
-from models import Post, Author, Engagement, Trend, TrendScore
+from models import Post, Author, Engagement, TrendScore
 from services.twitter_service import TwitterService
 from services.trend_service import TrendService
 from config import Config
@@ -141,26 +141,24 @@ class BackgroundTasks:
                     continue
                 
                 # Create new post
-                post = Post(
-                    post_id=post_data['post_id'],
-                    author_id=author.id,
-                    content=post_data['content'],
-                    publish_date=post_data['created_at'],
-                    created_at=datetime.utcnow()
-                )
+                post = Post()
+                post.post_id = post_data['post_id']
+                post.author_id = author.id
+                post.content = post_data['content']
+                post.publish_date = post_data['created_at']
+                post.created_at = datetime.utcnow()
                 
                 db.session.add(post)
                 db.session.flush()  # Get the post ID
                 
                 # Create engagement record
-                engagement = Engagement(
-                    post_id=post.id,
-                    like_count=post_data['metrics']['like_count'],
-                    comment_count=post_data['metrics']['reply_count'],
-                    repost_count=post_data['metrics']['retweet_count'] + 
-                                post_data['metrics'].get('quote_count', 0),
-                    timestamp=datetime.utcnow()
-                )
+                engagement = Engagement()
+                engagement.post_id = post.id
+                engagement.like_count = post_data['metrics']['like_count']
+                engagement.comment_count = post_data['metrics']['reply_count']
+                engagement.repost_count = (post_data['metrics']['retweet_count'] + 
+                                         post_data['metrics'].get('quote_count', 0))
+                engagement.timestamp = datetime.utcnow()
                 
                 db.session.add(engagement)
                 stored_posts.append(post)
@@ -200,14 +198,13 @@ class BackgroundTasks:
                 author.updated_at = datetime.utcnow()
             else:
                 # Create new author
-                author = Author(
-                    username=username,
-                    author_name=author_data.get('name', ''),
-                    profile_url=author_data.get('profile_url', ''),
-                    follower_count=author_data.get('follower_count', 0),
-                    verified=author_data.get('verified', False),
-                    created_at=datetime.utcnow()
-                )
+                author = Author()
+                author.username = username
+                author.author_name = author_data.get('name', '')
+                author.profile_url = author_data.get('profile_url', '')
+                author.follower_count = author_data.get('follower_count', 0)
+                author.verified = author_data.get('verified', False)
+                author.created_at = datetime.utcnow()
                 db.session.add(author)
             
             return author
