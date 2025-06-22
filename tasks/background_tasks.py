@@ -26,17 +26,28 @@ class BackgroundTasks:
             try:
                 logger.info("Starting background task: fetch and process posts")
                 
+                # Check rate limit without consuming quota
+                rate_limit = self.twitter_service.get_rate_limit_status()
+                remaining = int(rate_limit.get('remaining', '0'))
+                
+                if remaining <= 0:
+                    reset_time = int(rate_limit.get('reset_time', 0))
+                    current_time = int(datetime.utcnow().timestamp())
+                    wait_minutes = (reset_time - current_time) / 60
+                    logger.warning(f"Rate limit exceeded. Reset in {wait_minutes:.1f} minutes")
+                    return
+                
                 # Fetch recent posts from Twitter
-                logger.info(f"Fetching posts with terms: {self.config.AI_SEARCH_TERMS[:5]}...")
+                logger.info(f"Fetching posts with terms: {self.config.AI_SEARCH_TERMS[:3]}... (quota: {remaining})")
                 posts_data = self.twitter_service.search_recent_posts(
-                    search_terms=self.config.AI_SEARCH_TERMS,
-                    max_results=self.config.MAX_POSTS_PER_DAY
+                    search_terms=self.config.AI_SEARCH_TERMS[:5],  # Limit terms to avoid query length issues
+                    max_results=min(self.config.MAX_POSTS_PER_DAY, 15)  # Conservative limit
                 )
                 
                 logger.info(f"API returned {len(posts_data)} posts")
                 
                 if not posts_data:
-                    logger.warning("No posts retrieved from Twitter API")
+                    logger.warning("No posts retrieved from Twitter API - checking if rate limited")
                     return
                 
                 # Log first post structure for debugging

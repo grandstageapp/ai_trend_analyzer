@@ -174,29 +174,28 @@ class TwitterService:
             Rate limit information
         """
         try:
-            # Use the dedicated rate limit endpoint that doesn't consume quota
-            url = f"{self.base_url}/application/rate_limit_status"
-            response = requests.get(url, headers=self.headers)
+            # Since the dedicated rate limit endpoint returns 404, we'll use a more efficient approach
+            # Store the last known rate limit info and only check when needed
+            if hasattr(self, '_last_rate_check') and hasattr(self, '_cached_rate_info'):
+                from datetime import datetime
+                if (datetime.utcnow().timestamp() - self._last_rate_check) < 30:  # Cache for 30 seconds
+                    return self._cached_rate_info
             
-            if response.status_code == 200:
-                data = response.json()
-                search_limits = data.get('resources', {}).get('search', {}).get('/search/recent', {})
-                return {
-                    'remaining': str(search_limits.get('remaining', 0)),
-                    'reset_time': str(search_limits.get('reset', 0)),
-                    'limit': str(search_limits.get('limit', 0))
-                }
-            else:
-                # Fallback: make a minimal request and read headers
-                # This is less efficient but works if rate limit endpoint is unavailable
-                url_search = f"{self.base_url}/tweets/search/recent"
-                response = requests.get(url_search, headers=self.headers, params={'query': 'a', 'max_results': 10})
-                
-                return {
-                    'remaining': response.headers.get('x-rate-limit-remaining', '0'),
-                    'reset_time': response.headers.get('x-rate-limit-reset', '0'),
-                    'limit': response.headers.get('x-rate-limit-limit', '1')
-                }
+            # Make minimal request to get current rate limit headers
+            url = f"{self.base_url}/tweets/search/recent"
+            response = requests.get(url, headers=self.headers, params={'query': 'test', 'max_results': 10})
+            
+            rate_info = {
+                'remaining': response.headers.get('x-rate-limit-remaining', '0'),
+                'reset_time': response.headers.get('x-rate-limit-reset', '0'),
+                'limit': response.headers.get('x-rate-limit-limit', '1')
+            }
+            
+            # Cache the result
+            self._last_rate_check = datetime.utcnow().timestamp()
+            self._cached_rate_info = rate_info
+            
+            return rate_info
             
         except Exception as e:
             logger.error(f"Error checking rate limits: {e}")
