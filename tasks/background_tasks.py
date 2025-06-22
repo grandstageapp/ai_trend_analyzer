@@ -27,26 +27,39 @@ class BackgroundTasks:
                 logger.info("Starting background task: fetch and process posts")
                 
                 # Fetch recent posts from Twitter
+                logger.info(f"Fetching posts with terms: {self.config.AI_SEARCH_TERMS[:5]}...")
                 posts_data = self.twitter_service.search_recent_posts(
                     search_terms=self.config.AI_SEARCH_TERMS,
                     max_results=self.config.MAX_POSTS_PER_DAY
                 )
                 
+                logger.info(f"API returned {len(posts_data)} posts")
+                
                 if not posts_data:
-                    logger.warning("No posts retrieved from Twitter")
+                    logger.warning("No posts retrieved from Twitter API")
                     return
                 
+                # Log first post structure for debugging
+                if posts_data:
+                    logger.debug(f"Sample post keys: {list(posts_data[0].keys())}")
+                    logger.debug(f"Sample post content: {posts_data[0].get('content', 'NO_CONTENT')[:100]}")
+                
                 # Store posts and authors in database
+                logger.info("Starting database storage...")
                 stored_posts = self._store_posts_and_authors(posts_data)
+                logger.info(f"Database storage completed: {len(stored_posts)} posts stored")
                 
                 if stored_posts:
                     # Analyze trends from new posts
+                    logger.info("Starting trend analysis...")
                     self._analyze_and_create_trends(stored_posts)
                     
                     # Calculate trend scores
+                    logger.info("Calculating trend scores...")
                     self.trend_service.calculate_trend_scores()
                 
-                logger.info(f"Background task completed. Processed {len(stored_posts)} new posts")
+                db.session.commit()
+                logger.info(f"Background task completed successfully. Processed {len(stored_posts)} new posts")
                 
             except Exception as e:
                 logger.error(f"Error in background task: {e}")
@@ -94,9 +107,12 @@ class BackgroundTasks:
             List of stored Post objects
         """
         stored_posts = []
+        logger.info(f"Processing {len(posts_data)} posts for storage")
         
         try:
-            for post_data in posts_data:
+            for i, post_data in enumerate(posts_data):
+                logger.debug(f"Processing post {i+1}/{len(posts_data)}: {post_data.get('post_id', 'NO_ID')}")
+                
                 # Check if post already exists
                 existing_post = Post.query.filter_by(
                     post_id=post_data['post_id']
