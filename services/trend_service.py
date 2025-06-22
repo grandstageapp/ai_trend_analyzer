@@ -55,9 +55,19 @@ class TrendService:
                 identified_trends = self.openai_service.cluster_and_identify_trends(cluster_data)
                 
                 for trend_data in identified_trends:
-                    trend = self._create_trend_from_data(trend_data, cluster_posts)
+                    # Create trend without description first for speed
+                    trend = self._create_trend_basic(trend_data, cluster_posts)
                     if trend:
                         trends.append(trend)
+                        # Generate description asynchronously if needed
+                        try:
+                            post_contents = [post.content for post in cluster_posts]
+                            description = self.openai_service.generate_trend_description(trend.title, post_contents)
+                            trend.description = description
+                            db.session.commit()
+                        except Exception as e:
+                            logger.warning(f"Description generation failed for {trend.title}: {e}")
+                            # Continue without description
             
             logger.info(f"Created {len(trends)} trends")
             return trends
@@ -134,6 +144,63 @@ class TrendService:
             logger.error(f"Error clustering posts: {e}")
             return [posts]  # Return all posts as single cluster on error
     
+    def _create_trend_basic(self, trend_data: Dict[str, Any], cluster_posts: List[Post]) -> Trend:
+        """
+        Create a Trend object with basic information only (no description)
+        
+        Args:
+            trend_data: Trend information from OpenAI
+            cluster_posts: Posts that belong to this trend
+            
+        Returns:
+            Created Trend object or None
+        """
+        try:
+            title = trend_data.get('title', '').strip()
+            if not title:
+                return None
+            
+            # Check if trend already exists
+            existing_trend = Trend.query.filter_by(title=title).first()
+            if existing_trend:
+                logger.info(f"Trend '{title}' already exists, updating...")
+                trend = existing_trend
+            else:
+                # Create new trend with basic description
+                trend = Trend(
+                    title=title,
+                    description=f"Trending topic: {title}",
+                    total_posts=len(cluster_posts)
+                )
+                db.session.add(trend)
+                db.session.flush()  # Get the ID
+            
+            trend.total_posts = len(cluster_posts)
+            trend.updated_at = datetime.utcnow()
+            
+            # Create post-trend relationships
+            for post in cluster_posts:
+                existing_relation = PostTrend.query.filter_by(
+                    post_id=post.id, 
+                    trend_id=trend.id
+                ).first()
+                
+                if not existing_relation:
+                    post_trend = PostTrend(
+                        post_id=post.id,
+                        trend_id=trend.id
+                    )
+                    db.session.add(post_trend)
+            
+            db.session.commit()
+            logger.info(f"Created/updated trend: {title}")
+            return trend
+            
+        except Exception as e:
+            logger.error(f"Error creating trend: {e}")
+            db.session.rollback()
+            return None
+
     def _create_trend_from_data(self, trend_data: Dict[str, Any], cluster_posts: List[Post]) -> Trend:
         """
         Create a Trend object from AI-identified trend data
