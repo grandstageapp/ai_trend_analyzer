@@ -17,7 +17,6 @@ class TrendService:
     def __init__(self):
         self.openai_service = OpenAIService()
     
-    @track_performance("trend_analysis")
     def analyze_and_create_trends(self, posts: List[Post]) -> List[Trend]:
         """
         Analyze posts and create trends using clustering and AI
@@ -67,7 +66,6 @@ class TrendService:
             logger.error(f"Error analyzing trends: {e}")
             return []
     
-    @track_performance("trend_score_calculation")
     def calculate_trend_scores(self) -> None:
         """
         Calculate trend scores for all trends based on engagement metrics
