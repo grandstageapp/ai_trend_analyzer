@@ -4,6 +4,8 @@ Test script to collect real AI trend data and populate the database
 """
 import os
 import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from datetime import datetime
 from app import create_app, db
 from models import Author, Post, Engagement, Trend, TrendScore
