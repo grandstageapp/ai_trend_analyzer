@@ -55,19 +55,10 @@ class TrendService:
                 identified_trends = self.openai_service.cluster_and_identify_trends(cluster_data)
                 
                 for trend_data in identified_trends:
-                    # Create trend without description first for speed
+                    # Create trend with basic description only
                     trend = self._create_trend_basic(trend_data, cluster_posts)
                     if trend:
                         trends.append(trend)
-                        # Generate description asynchronously if needed
-                        try:
-                            post_contents = [post.content for post in cluster_posts]
-                            description = self.openai_service.generate_trend_description(trend.title, post_contents)
-                            trend.description = description
-                            db.session.commit()
-                        except Exception as e:
-                            logger.warning(f"Description generation failed for {trend.title}: {e}")
-                            # Continue without description
             
             logger.info(f"Created {len(trends)} trends")
             return trends

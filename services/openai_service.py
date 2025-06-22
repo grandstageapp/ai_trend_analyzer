@@ -295,7 +295,9 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                temperature=0.4
+                temperature=0.3,
+                max_tokens=100,
+                timeout=15.0
             )
             
             content = response.choices[0].message.content
