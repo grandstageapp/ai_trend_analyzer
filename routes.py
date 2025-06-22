@@ -94,15 +94,38 @@ def index():
         
         trends = trends_pagination.items
         
-        # Prepare trend data with scores and summaries
+        # Prepare trend data with scores, summaries, and engagement data
         trend_data = []
         for trend in trends:
             score_history = trend.get_score_history(10)
+            
+            # Get actual post count and engagement data for this trend
+            related_posts = db.session.query(Post).join(PostTrend).filter(
+                PostTrend.trend_id == trend.id
+            ).all()
+            
+            total_engagement = 0
+            post_count = len(related_posts)
+            
+            for post in related_posts:
+                latest_engagement = db.session.query(Engagement).filter_by(
+                    post_id=post.id
+                ).order_by(Engagement.timestamp.desc()).first()
+                
+                if latest_engagement:
+                    total_engagement += (
+                        latest_engagement.like_count + 
+                        latest_engagement.comment_count + 
+                        latest_engagement.repost_count
+                    )
+            
             trend_data.append({
                 'trend': trend,
                 'latest_score': trend.get_latest_score(),
                 'score_history': score_history,
-                'summary': truncate_text(trend.description, 2) if trend.description else ''
+                'summary': truncate_text(trend.description, 2) if trend.description else '',
+                'post_count': post_count,
+                'total_engagement': total_engagement
             })
         
         # Get total trends count for header display
@@ -151,7 +174,7 @@ def trend_detail(trend_id):
         PostTrend.trend_id == trend_id
     ).order_by(desc(Post.publish_date)).limit(10).all()
     
-    # Get engagement statistics
+    # Get engagement statistics from the latest engagement for each post
     total_engagement = db.session.query(
         func.sum(Engagement.like_count).label('total_likes'),
         func.sum(Engagement.comment_count).label('total_comments'),
@@ -159,6 +182,14 @@ def trend_detail(trend_id):
     ).join(Post).join(PostTrend).filter(
         PostTrend.trend_id == trend_id
     ).first()
+    
+    # Ensure we have valid engagement data
+    if not total_engagement.total_likes:
+        total_engagement = type('obj', (object,), {
+            'total_likes': 0,
+            'total_comments': 0,
+            'total_reposts': 0
+        })
     
     return render_template('trend_detail.html',
                          trend=trend,

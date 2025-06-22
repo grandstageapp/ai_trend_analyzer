@@ -29,25 +29,15 @@
             <div class="row text-center mb-3">
                 <div class="col-4">
                     <small class="text-muted d-block">Posts</small>
-                    <strong class="text-primary">{{ trend_item.trend.total_posts }}</strong>
+                    <strong class="text-primary">{{ trend_item.post_count or trend_item.trend.total_posts }}</strong>
                 </div>
                 <div class="col-4">
                     <small class="text-muted d-block">Score</small>
                     <strong class="text-success">{{ "%.1f"|format(trend_item.latest_score) }}</strong>
                 </div>
                 <div class="col-4">
-                    <small class="text-muted d-block">Age</small>
-                    <strong class="text-info">
-                        {% set created = trend_item.trend.created_at %}
-                        {% set days_old = (created | days_ago) %}
-                        {% if days_old == 0 %}
-                            Today
-                        {% elif days_old == 1 %}
-                            1 day
-                        {% else %}
-                            {{ days_old }} days
-                        {% endif %}
-                    </strong>
+                    <small class="text-muted d-block">Engagement</small>
+                    <strong class="text-info">{{ trend_item.total_engagement or 0 }}</strong>
                 </div>
             </div>
 

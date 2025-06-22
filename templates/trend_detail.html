@@ -137,8 +137,8 @@
                     <div class="row text-center">
                         <div class="col-6 mb-3">
                             <div class="border-end">
-                                <h3 class="text-primary mb-1">{{ trend.total_posts }}</h3>
-                                <small class="text-muted">Total Posts</small>
+                                <h3 class="text-primary mb-1">{{ related_posts|length or trend.total_posts }}</h3>
+                                <small class="text-muted">Related Posts</small>
                             </div>
                         </div>
                         <div class="col-6 mb-3">
