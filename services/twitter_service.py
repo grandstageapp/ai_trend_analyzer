@@ -3,6 +3,7 @@ import logging
 import requests
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +11,7 @@ class TwitterService:
     """Service for interacting with X/Twitter API"""
     
     def __init__(self):
+        self.config = Config()
         self.bearer_token = os.environ.get('X_BEARER_TOKEN')
         self.api_key = os.environ.get('X_API_KEY') 
         self.api_secret = os.environ.get('X_API_SECRET')
@@ -60,7 +62,7 @@ class TwitterService:
             # API parameters - corrected based on X API documentation
             params = {
                 "query": query,
-                "max_results": max(10, min(max_results, 100)),  # API minimum is 10, maximum is 100
+                "max_results": max(self.config.DEFAULT_SEARCH_RESULTS, min(max_results, self.config.MAX_SEARCH_RESULTS)),
                 "start_time": since_time,
                 "tweet.fields": "created_at,public_metrics,author_id,text,id,lang",
                 "user.fields": "id,username,name,public_metrics,verified",
