@@ -39,31 +39,29 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     
-    # Defer database initialization to speed up startup
-    def init_database():
-        """Initialize database on first access"""
+    with app.app_context():
+        # Import models to ensure tables are created
+        import models
+        
+        # Lazy database initialization for faster startup
         try:
-            with app.app_context():
-                import models
-                db.create_all()
+            # Create all tables
+            db.create_all()
+            
+            # Enable PGVector extension
+            try:
+                with db.engine.connect() as conn:
+                    conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                    conn.commit()
+                logger.info("PGVector extension enabled")
+            except Exception as e:
+                logger.warning(f"Could not enable PGVector extension: {e}")
+            
+            logger.info("Database initialized successfully on attempt 1")
                 
-                # Enable PGVector extension
-                try:
-                    with db.engine.connect() as conn:
-                        conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
-                        conn.commit()
-                    logger.info("PGVector extension enabled")
-                except Exception as e:
-                    logger.warning(f"Could not enable PGVector extension: {e}")
-                
-                logger.info("Database initialized successfully")
-                return True
         except Exception as e:
             logger.warning(f"Database initialization failed: {e}")
-            return False
-    
-    # Store init function for lazy loading
-    app._init_database = init_database
+            # Continue without failing - health checks will handle this
     
     # Register custom template filters
     from datetime import datetime

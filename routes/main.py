@@ -9,7 +9,7 @@ from utils.helpers import format_number, truncate_text
 logger = logging.getLogger(__name__)
 main_bp = Blueprint('main', __name__)
 
-@main_bp.route('/trends')
+@main_bp.route('/')
 def index():
     """Homepage displaying trend cards with search and filtering"""
     try:
