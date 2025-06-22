@@ -74,8 +74,8 @@ def create_app():
         return markdown.markdown(text, extensions=['nl2br'])
     
     # Register blueprints
-    import routes
-    app.register_blueprint(routes.main_bp)
+    from routes import main_bp
+    app.register_blueprint(main_bp)
     
     # Register performance monitoring routes
     try:
