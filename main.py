@@ -20,6 +20,11 @@ def deployment_health():
         'timestamp': datetime.utcnow().isoformat()
     }), 200
 
+@app.route('/ping')
+def ping():
+    """Simple ping endpoint for load balancers"""
+    return jsonify({'status': 'ok'}), 200
+
 if __name__ == "__main__":
     logger.info("Starting AI Trends Analyzer on port 5000")
     app.run(host="0.0.0.0", port=5000, debug=True)
