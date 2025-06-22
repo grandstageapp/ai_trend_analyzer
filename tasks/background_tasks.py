@@ -214,14 +214,23 @@ class BackgroundTasks:
                 db.session.add(post)
                 db.session.flush()  # Get the post ID
                 
-                # Create engagement record
+                # Create engagement record with enhanced metrics handling
                 engagement = Engagement()
                 engagement.post_id = post.id
-                engagement.like_count = post_data['metrics']['like_count']
-                engagement.comment_count = post_data['metrics']['reply_count']
-                engagement.repost_count = (post_data['metrics']['retweet_count'] + 
-                                         post_data['metrics'].get('quote_count', 0))
+                
+                metrics = post_data['metrics']
+                engagement.like_count = max(0, metrics.get('like_count', 0))
+                engagement.comment_count = max(0, metrics.get('reply_count', 0))
+                engagement.repost_count = max(0, 
+                    metrics.get('retweet_count', 0) + metrics.get('quote_count', 0))
                 engagement.timestamp = datetime.utcnow()
+                
+                # Log metrics for debugging
+                if any([engagement.like_count, engagement.comment_count, engagement.repost_count]):
+                    logger.info(f"Post {post_data['post_id']}: {engagement.like_count} likes, "
+                              f"{engagement.comment_count} comments, {engagement.repost_count} retweets")
+                else:
+                    logger.debug(f"Post {post_data['post_id']}: No engagement metrics available")
                 
                 db.session.add(engagement)
                 stored_posts.append(post)
