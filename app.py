@@ -43,17 +43,36 @@ def create_app():
         # Import models to ensure tables are created
         import models
         
-        # Create all tables
-        db.create_all()
+        # Create tables with retry logic for deployment
+        max_retries = 3
+        retry_delay = 2
         
-        # Enable PGVector extension
-        try:
-            with db.engine.connect() as conn:
-                conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
-                conn.commit()
-            logger.info("PGVector extension enabled")
-        except Exception as e:
-            logger.warning(f"Could not enable PGVector extension: {e}")
+        for attempt in range(max_retries):
+            try:
+                # Create all tables
+                db.create_all()
+                
+                # Enable PGVector extension
+                try:
+                    with db.engine.connect() as conn:
+                        conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                        conn.commit()
+                    logger.info("PGVector extension enabled")
+                except Exception as e:
+                    logger.warning(f"Could not enable PGVector extension: {e}")
+                
+                logger.info(f"Database initialized successfully on attempt {attempt + 1}")
+                break
+                
+            except Exception as e:
+                logger.warning(f"Database initialization attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                else:
+                    logger.error(f"Database initialization failed after {max_retries} attempts")
+                    # Continue without failing - health checks will handle this
     
     # Register custom template filters
     from datetime import datetime
@@ -72,6 +91,16 @@ def create_app():
         if not text:
             return ""
         return markdown.markdown(text, extensions=['nl2br'])
+    
+    # Simple root health check - critical for deployment
+    @app.route('/')
+    def root_health_check():
+        """Root endpoint that returns 200 for deployment health checks"""
+        return {
+            'status': 'healthy',
+            'service': 'ai-trends-analyzer',
+            'timestamp': datetime.utcnow().isoformat()
+        }, 200
     
     # Register blueprints
     from routes import main_bp

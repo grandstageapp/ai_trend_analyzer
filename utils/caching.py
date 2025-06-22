@@ -27,7 +27,7 @@ class CacheManager:
         self._init_redis()
     
     def _init_redis(self):
-        """Initialize Redis connection with fallback to memory cache"""
+        """Initialize Redis connection with graceful fallback to memory cache"""
         try:
             import redis
             # Try to connect to Redis if available
@@ -36,14 +36,18 @@ class CacheManager:
                 port=6379,
                 db=0,
                 decode_responses=True,
-                socket_timeout=5,
-                socket_connect_timeout=5
+                socket_timeout=2,
+                socket_connect_timeout=2,
+                retry_on_timeout=False
             )
-            # Test connection
+            # Test connection with timeout
             self.redis_client.ping()
             logger.info("Redis cache initialized successfully")
+        except (redis.ConnectionError, redis.TimeoutError, ConnectionRefusedError) as e:
+            logger.info(f"Redis not available, using in-memory cache: {e}")
+            self.redis_client = None
         except Exception as e:
-            logger.warning(f"Redis not available, using memory cache: {e}")
+            logger.warning(f"Redis initialization failed, using in-memory cache: {e}")
             self.redis_client = None
     
     def get(self, key: str) -> Optional[Any]:
