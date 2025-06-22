@@ -81,7 +81,7 @@ def create_app():
             return ""
         return markdown.markdown(text, extensions=['nl2br'])
     
-    # Remove duplicate ping endpoint since main.py handles this
+
     
     # Register blueprints
     from routes import main_bp
@@ -95,13 +95,7 @@ def create_app():
     except ImportError as e:
         logger.warning(f"Performance routes not available: {e}")
     
-    # Register health monitoring routes  
-    try:
-        from routes.health import health_bp
-        app.register_blueprint(health_bp)
-        logger.info("Health monitoring routes registered")
-    except ImportError as e:
-        logger.warning(f"Health routes not available: {e}")
+
     
     # Error handlers
     @app.errorhandler(404)
