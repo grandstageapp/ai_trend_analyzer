@@ -13,6 +13,7 @@ dependencies = [
     "markdown>=3.8.2",
     "numpy>=2.3.0",
     "openai>=1.89.0",
+    "psutil>=7.0.0",
     "psycopg2-binary>=2.9.10",
     "redis>=6.2.0",
     "requests>=2.32.4",

@@ -81,8 +81,17 @@ def create_app():
     try:
         from routes.performance import performance_bp
         app.register_blueprint(performance_bp)
-    except ImportError:
-        logger.warning("Performance routes not available")
+        logger.info("Performance monitoring routes registered")
+    except ImportError as e:
+        logger.warning(f"Performance routes not available: {e}")
+    
+    # Register health monitoring routes  
+    try:
+        from routes.health import health_bp
+        app.register_blueprint(health_bp)
+        logger.info("Health monitoring routes registered")
+    except ImportError as e:
+        logger.warning(f"Health routes not available: {e}")
     
     # Error handlers
     @app.errorhandler(404)
