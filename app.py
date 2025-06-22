@@ -92,15 +92,7 @@ def create_app():
             return ""
         return markdown.markdown(text, extensions=['nl2br'])
     
-    # Simple deployment health check endpoint
-    @app.route('/ping')
-    def deployment_health_check():
-        """Simple endpoint for deployment health checks"""
-        return {
-            'status': 'healthy',
-            'service': 'ai-trends-analyzer',
-            'timestamp': datetime.utcnow().isoformat()
-        }, 200
+    # Remove duplicate ping endpoint since main.py handles this
     
     # Register blueprints
     from routes import main_bp
