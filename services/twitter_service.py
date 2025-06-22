@@ -54,14 +54,15 @@ class TwitterService:
             since_time = (datetime.utcnow() - timedelta(hours=24)).isoformat() + "Z"
             query += f" lang:en -is:retweet"
             
-            # API parameters
+            # API parameters - corrected based on X API documentation
             params = {
                 "query": query,
-                "max_results": min(max_results, 100),  # API limit is 100
+                "max_results": max(10, min(max_results, 100)),  # API minimum is 10, maximum is 100
                 "start_time": since_time,
-                "tweet.fields": "created_at,public_metrics,author_id,text,id",
-                "user.fields": "id,username,name,public_metrics,profile_image_url",
-                "expansions": "author_id"
+                "tweet.fields": "created_at,public_metrics,author_id,text,id,lang,possibly_sensitive",
+                "user.fields": "id,username,name,public_metrics,profile_image_url,verified,created_at",
+                "expansions": "author_id",
+                "sort_order": "recency"
             }
             
             url = f"{self.base_url}/tweets/search/recent"
