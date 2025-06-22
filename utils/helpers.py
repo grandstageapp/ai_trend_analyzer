@@ -25,35 +25,54 @@ def format_number(num: int) -> str:
 
 def truncate_text(text: str, sentences: int = 2) -> str:
     """
-    Truncate text to specified number of sentences, removing markdown formatting
+    Truncate text to specified number of sentences from first paragraph, removing markdown formatting
     
     Args:
         text: Text to truncate (may contain markdown)
         sentences: Number of sentences to keep
         
     Returns:
-        Truncated plain text
+        Truncated plain text from first content paragraph
     """
     if not text:
         return ""
     
+    # Split into paragraphs to find first content paragraph
+    paragraphs = text.split('\n\n')
+    content_paragraph = ""
+    
+    for paragraph in paragraphs:
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+        
+        # Skip headers (lines starting with #)
+        if paragraph.startswith('#'):
+            continue
+            
+        # This is the first content paragraph
+        content_paragraph = paragraph
+        break
+    
+    if not content_paragraph:
+        return ""
+    
     # Remove markdown formatting for clean summary
-    # Remove headers
-    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
     # Remove bold/italic
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
-    text = re.sub(r'\*(.*?)\*', r'\1', text)
+    content_paragraph = re.sub(r'\*\*(.*?)\*\*', r'\1', content_paragraph)
+    content_paragraph = re.sub(r'\*(.*?)\*', r'\1', content_paragraph)
     # Remove bullet points
-    text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
+    content_paragraph = re.sub(r'^\s*[-*+]\s+', '', content_paragraph, flags=re.MULTILINE)
     # Clean up extra whitespace
-    text = re.sub(r'\n+', ' ', text)
-    text = re.sub(r'\s+', ' ', text).strip()
+    content_paragraph = re.sub(r'\n+', ' ', content_paragraph)
+    content_paragraph = re.sub(r'\s+', ' ', content_paragraph).strip()
     
     # Split by sentence ending punctuation
-    sentence_endings = re.split(r'[.!?]+', text)
+    sentence_endings = re.split(r'[.!?]+', content_paragraph)
+    sentence_endings = [s.strip() for s in sentence_endings if s.strip()]
     
     if len(sentence_endings) <= sentences:
-        return text
+        return content_paragraph
     
     # Take first N sentences and add back punctuation
     truncated = '. '.join(sentence_endings[:sentences])

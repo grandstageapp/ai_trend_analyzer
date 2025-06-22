@@ -412,7 +412,8 @@ def search_trends():
                 'trend': trend,
                 'latest_score': trend.get_latest_score(),
                 'score_history': score_history,
-                'summary': truncate_text(trend.description, 2) if trend.description else ''
+                'summary': truncate_text(trend.description, 2) if trend.description else '',
+                'hover_summary': truncate_text(trend.description, 3) if trend.description else ''
             })
         
         return render_template('components/trend_card.html', trends=trend_data)
