@@ -52,8 +52,9 @@ class TwitterService:
             # Build search query with OR operators
             query = " OR ".join([f'"{term}"' for term in search_terms])
             
-            # Add filters for recent posts (24 hours) and English language
-            since_time = (datetime.utcnow() - timedelta(hours=24)).isoformat() + "Z"
+            # Add filters for recent posts and English language
+            # Use 7 days instead of 24 hours to get more results
+            since_time = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
             query += f" lang:en -is:retweet"
             
             # API parameters - corrected based on X API documentation
@@ -104,8 +105,11 @@ class TwitterService:
                 logger.error(f"Twitter API error: {response.status_code} - {response.text}")
                 return []
                 
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error when searching Twitter posts: {e}")
+            return []
         except Exception as e:
-            logger.error(f"Error searching Twitter posts: {e}")
+            logger.error(f"Unexpected error searching Twitter posts: {e}")
             return []
     
     def get_user_info(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -149,7 +153,8 @@ class TwitterService:
         """
         posts = []
         
-        if 'data' not in data:
+        if 'data' not in data or not data['data']:
+            logger.info("No tweet data found in API response")
             return posts
         
         # Create user lookup dictionary
@@ -160,12 +165,24 @@ class TwitterService:
         
         for tweet in data['data']:
             try:
+                # Validate required fields
+                if not tweet.get('id') or not tweet.get('text') or not tweet.get('author_id'):
+                    logger.warning(f"Skipping tweet with missing required fields: {tweet.get('id', 'unknown')}")
+                    continue
+                
                 author_info = users.get(tweet['author_id'], {})
+                
+                # Parse created_at with proper error handling
+                try:
+                    created_at = datetime.fromisoformat(tweet['created_at'].replace('Z', '+00:00'))
+                except (ValueError, KeyError):
+                    logger.warning(f"Invalid created_at format for tweet {tweet['id']}, using current time")
+                    created_at = datetime.utcnow()
                 
                 post = {
                     'post_id': tweet['id'],
                     'content': tweet['text'],
-                    'created_at': datetime.fromisoformat(tweet['created_at'].replace('Z', '+00:00')),
+                    'created_at': created_at,
                     'author': {
                         'id': tweet['author_id'],
                         'username': author_info.get('username', 'unknown'),
