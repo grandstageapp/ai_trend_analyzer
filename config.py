@@ -22,7 +22,7 @@ class Config:
         "large language model", "generative AI", "AGI", "artificial general intelligence",
         "Anthropic", "Claude", "Google AI", "Bard", "Gemini", "Microsoft AI",
         "computer vision", "natural language processing", "NLP", "automation",
-        "robotics", "AI ethics", "AI safety", "prompt engineering"
+        "AI ethics", "AI safety", "prompt engineering"
     ]
     
     # Trend scoring weights
@@ -37,4 +37,4 @@ class Config:
     CALCULATE_TRENDS_INTERVAL = timedelta(hours=24)
     
     # Data limits
-    MAX_POSTS_PER_DAY = 20
+    MAX_POSTS_PER_DAY = 10
