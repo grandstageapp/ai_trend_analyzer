@@ -41,12 +41,15 @@ def create_app():
     db.init_app(app)
     
     with app.app_context():
-        # Import models to ensure tables are created
+        # Import models to ensure tables are defined
         import models
         
-        # Skip database initialization during startup for deployment speed
-        # Database will be initialized on first actual use
-        pass
+        # Initialize database with minimal operations for deployment
+        try:
+            db.create_all()
+        except Exception:
+            # Continue without database for health checks
+            pass
     
     # Register custom template filters
     from datetime import datetime

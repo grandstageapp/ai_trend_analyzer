@@ -1,8 +1,10 @@
-from app import db
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text
 import uuid
+
+# Import db from app module - will be set during app initialization
+from app import db
 
 class Author(db.Model):
     """X/Twitter authors table"""
