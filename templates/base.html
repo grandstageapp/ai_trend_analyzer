@@ -163,6 +163,25 @@
             onerror="console.warn('Bootstrap JS failed to load')"></script>
     
     <!-- Enhanced Error Handler (load first) -->
+    <script>
+        // Immediate script error suppression - load before any other scripts
+        window.onerror = function(message, source, lineno, colno, error) {
+            if (message === 'Script error.' || !message || message === '' || 
+                (source === '' && lineno === 0) || (source === null && lineno === 0)) {
+                return true; // Suppress cross-origin script errors
+            }
+            return false;
+        };
+        
+        window.addEventListener('error', function(event) {
+            if (event.message === 'Script error.' || event.message === '' || 
+                event.message === null || (event.filename === '' && event.lineno === 0)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return false;
+            }
+        }, true);
+    </script>
     <script src="{{ url_for('static', filename='js/error-handler.js') }}"></script>
     
     <!-- Custom JavaScript -->

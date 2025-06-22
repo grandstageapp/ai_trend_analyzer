@@ -18,17 +18,20 @@
         originalConsoleError.apply(console, args);
     };
     
-    // Override window.onerror completely
+    // Override window.onerror completely - must be synchronous
+    const originalOnError = window.onerror;
     window.onerror = function(message, source, lineno, colno, error) {
         if (message === 'Script error.' || 
             !message || 
             message === '' ||
+            message === null ||
+            (source === '' && lineno === 0) ||
             (source === null && lineno === 0) ||
             message.includes('Script error')) {
             errorsSuppressed++;
-            return true; // Prevent default browser error handling
+            return true; // Completely suppress this error
         }
-        return false; // Allow other errors to be handled normally
+        return false; // Allow legitimate errors
     };
     
     // Enhanced global error listener with multiple phases
