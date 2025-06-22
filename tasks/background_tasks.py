@@ -137,6 +137,26 @@ class BackgroundTasks:
                 logger.error(f"Error in daily trend analysis: {e}")
                 db.session.rollback()
     
+    def _analyze_and_create_trends(self, posts: List[Post]) -> None:
+        """
+        Analyze posts and create trends with improved error handling
+        
+        Args:
+            posts: List of Post objects to analyze
+        """
+        if not posts:
+            logger.info(f"[{self.correlation_id}] No posts to analyze for trends")
+            return
+        
+        try:
+            logger.info(f"[{self.correlation_id}] Analyzing {len(posts)} posts for trends")
+            trends = self.service_manager.trend_service.analyze_and_create_trends(posts)
+            logger.info(f"[{self.correlation_id}] Created {len(trends)} new trends")
+            
+        except Exception as e:
+            logger.error(f"[{self.correlation_id}] Error in trend analysis: {e}")
+            raise TrendAnalysisException(f"Failed to analyze trends: {e}", self.correlation_id, e)
+    
     def _store_posts_and_authors(self, posts_data: List[dict]) -> List[Post]:
         """
         Store posts and authors in the database

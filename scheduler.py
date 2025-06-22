@@ -7,6 +7,7 @@ import schedule
 import logging
 from datetime import datetime
 from tasks.background_tasks import BackgroundTasks
+from utils.monitoring import task_monitor
 
 # Configure logging
 logging.basicConfig(
@@ -78,6 +79,13 @@ def main():
     # Keep the scheduler running
     while True:
         schedule.run_pending()
+        
+        # Clean up stale tasks every hour
+        if datetime.now().minute == 0:
+            cleaned = task_monitor.cleanup_stale_tasks(max_age_hours=6)
+            if cleaned > 0:
+                logger.info(f"Cleaned up {cleaned} stale tasks")
+        
         time.sleep(300)  # Check every 5 minutes
 
 if __name__ == "__main__":
