@@ -30,10 +30,11 @@ class BackgroundTasks:
                 # The search_recent_posts function will handle rate limiting internally
                 
                 # Fetch recent posts from Twitter
-                logger.info(f"Fetching posts with terms: {self.config.AI_SEARCH_TERMS[:3]}...")
+                search_terms = self.config.AI_SEARCH_TERMS[:self.config.SEARCH_TERMS_LIMIT]
+                logger.info(f"Fetching posts with terms: {search_terms}...")
                 posts_data = self.twitter_service.search_recent_posts(
-                    search_terms=self.config.AI_SEARCH_TERMS[:3],  # Limit terms for testing
-                    max_results=10  # API minimum is 10
+                    search_terms=search_terms,
+                    max_results=self.config.DEFAULT_SEARCH_RESULTS
                 )
                 
                 logger.info(f"API returned {len(posts_data)} posts")

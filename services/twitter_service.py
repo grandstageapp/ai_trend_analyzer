@@ -38,14 +38,16 @@ class TwitterService:
             List of post dictionaries
         """
         try:
-            # Check rate limit first
-            rate_limit = self.get_rate_limit_status()
-            if int(rate_limit.get('remaining', 0)) <= 0:
-                reset_time = int(rate_limit.get('reset_time', 0))
-                current_time = int(datetime.utcnow().timestamp())
-                wait_time = reset_time - current_time
-                logger.warning(f"Rate limit exceeded. Reset in {wait_time} seconds at {datetime.fromtimestamp(reset_time)}")
-                return []
+            # Check rate limit first (only if we have cached info)
+            if hasattr(self, '_cached_rate_info'):
+                rate_limit = self.get_rate_limit_status()
+                remaining = int(rate_limit.get('remaining', 1))
+                if remaining <= 0:
+                    reset_time = int(rate_limit.get('reset_time', 0))
+                    current_time = int(datetime.utcnow().timestamp())
+                    wait_time = reset_time - current_time
+                    logger.warning(f"Rate limit exceeded. Reset in {wait_time} seconds at {datetime.fromtimestamp(reset_time)}")
+                    return []
             
             # Build search query with OR operators
             query = " OR ".join([f'"{term}"' for term in search_terms])
@@ -70,20 +72,33 @@ class TwitterService:
             logger.info(f"Searching Twitter for: {query}")
             response = requests.get(url, headers=self.headers, params=params)
             
-            # Cache rate limit info from response headers
-            self._cached_rate_info = {
-                'remaining': response.headers.get('x-rate-limit-remaining', '0'),
-                'reset_time': response.headers.get('x-rate-limit-reset', '0'),
-                'limit': response.headers.get('x-rate-limit-limit', '1')
-            }
+            # Cache rate limit info from response headers with proper data types
+            try:
+                self._cached_rate_info = {
+                    'remaining': int(response.headers.get('x-rate-limit-remaining', '0')),
+                    'reset_time': int(response.headers.get('x-rate-limit-reset', '0')),
+                    'limit': int(response.headers.get('x-rate-limit-limit', '1'))
+                }
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Error parsing rate limit headers: {e}")
+                self._cached_rate_info = {'remaining': 0, 'reset_time': 0, 'limit': 1}
             
             if response.status_code == 200:
                 data = response.json()
+                if 'data' not in data:
+                    logger.warning("No data returned from Twitter API - possibly no matching tweets")
+                    return []
                 posts = self._process_search_response(data)
                 logger.info(f"Retrieved {len(posts)} posts from Twitter")
                 return posts
             elif response.status_code == 429:
                 logger.warning("Rate limit exceeded during search")
+                return []
+            elif response.status_code == 400:
+                logger.error(f"Bad request to Twitter API: {response.text}")
+                return []
+            elif response.status_code == 401:
+                logger.error("Twitter API authentication failed - check API credentials")
                 return []
             else:
                 logger.error(f"Twitter API error: {response.status_code} - {response.text}")
@@ -180,16 +195,16 @@ class TwitterService:
         This doesn't consume API quota - it uses cached info from previous requests
         
         Returns:
-            Rate limit information
+            Rate limit information with consistent data types
         """
         # Return cached rate limit info if available
         if hasattr(self, '_cached_rate_info'):
             return self._cached_rate_info
         
-        # If no cached info, assume we need to make a request to get initial status
+        # If no cached info, assume we have quota until proven otherwise
         # This will be updated after the first actual API call
         return {
-            'remaining': '1',  # Assume we have quota until proven otherwise
-            'reset_time': str(int(datetime.utcnow().timestamp()) + 900),  # 15 minutes from now
-            'limit': '1'
+            'remaining': 1,  # Use int for consistency
+            'reset_time': int(datetime.utcnow().timestamp()) + 900,  # 15 minutes from now
+            'limit': 1
         }

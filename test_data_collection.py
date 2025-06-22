@@ -29,9 +29,10 @@ def test_data_collection():
             
             # Fetch recent AI-related posts
             print("Fetching AI-related posts from Twitter...")
+            search_terms = config.AI_SEARCH_TERMS[:config.SEARCH_TERMS_LIMIT]
             posts_data = twitter_service.search_recent_posts(
-                search_terms=config.AI_SEARCH_TERMS[:5],  # Use first 5 terms to avoid rate limits
-                max_results=10  # Small test batch
+                search_terms=search_terms,
+                max_results=config.DEFAULT_SEARCH_RESULTS
             )
             
             if not posts_data:

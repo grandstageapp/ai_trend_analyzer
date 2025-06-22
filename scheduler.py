@@ -42,13 +42,13 @@ def check_rate_limit_and_schedule():
     try:
         twitter = TwitterService()
         rate_limit = twitter.get_rate_limit_status()
-        remaining = int(rate_limit.get('remaining', 0))
+        remaining = rate_limit.get('remaining', 0)
         
         if remaining > 0:
             logger.info(f"Rate limit OK ({remaining} requests remaining), running data collection")
             run_data_collection()
         else:
-            reset_time = int(rate_limit.get('reset_time', 0))
+            reset_time = rate_limit.get('reset_time', 0)
             reset_datetime = datetime.fromtimestamp(reset_time)
             logger.info(f"Rate limit exceeded. Next reset at {reset_datetime}")
             

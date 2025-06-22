@@ -20,12 +20,14 @@ def main():
         
         # Check rate limit first
         from services.twitter_service import TwitterService
+        from config import Config
         twitter = TwitterService()
+        config = Config()
         rate_limit = twitter.get_rate_limit_status()
-        remaining = int(rate_limit.get('remaining', 0))
+        remaining = rate_limit.get('remaining', 0)
         
         if remaining <= 0:
-            reset_time = int(rate_limit.get('reset_time', 0))
+            reset_time = rate_limit.get('reset_time', 0)
             reset_datetime = datetime.fromtimestamp(reset_time)
             print(f"Rate limit exceeded. Next reset at {reset_datetime}")
             wait_minutes = (reset_time - datetime.now().timestamp()) / 60
