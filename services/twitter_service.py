@@ -52,13 +52,14 @@ class TwitterService:
                     logger.warning(f"Rate limit exceeded. Reset in {wait_time} seconds at {datetime.fromtimestamp(reset_time)}")
                     return []
             
-            # Build search query with OR operators
+            # Build search query with OR operators and proper filters
             query = " OR ".join([f'"{term}"' for term in search_terms])
             
-            # Add filters for recent posts and English language
+            # Add filters: English only, verified users only, exclude retweets, exclude replies
+            query += " lang:en is:verified -is:retweet -is:reply"
+            
             # Use 7 days instead of 24 hours to get more results
             since_time = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
-            query += " lang:en -is:verified"
             
             # API parameters - corrected based on X API documentation
             params = {
