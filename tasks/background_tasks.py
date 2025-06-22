@@ -172,7 +172,7 @@ class BackgroundTasks:
             db.session.rollback()
             return []
     
-    def _get_or_create_author(self, author_data: dict) -> Author:
+    def _get_or_create_author(self, author_data: dict) -> Author | None:
         """
         Get existing author or create new one
         
