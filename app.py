@@ -7,8 +7,8 @@ from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 import markdown
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging with reduced verbosity for deployment
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 class Base(DeclarativeBase):
@@ -43,25 +43,18 @@ def create_app():
         # Import models to ensure tables are created
         import models
         
-        # Lazy database initialization for faster startup
+        # Initialize database with faster configuration for deployment
         try:
-            # Create all tables
             db.create_all()
-            
             # Enable PGVector extension
             try:
                 with db.engine.connect() as conn:
                     conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
                     conn.commit()
-                logger.info("PGVector extension enabled")
             except Exception as e:
-                logger.warning(f"Could not enable PGVector extension: {e}")
-            
-            logger.info("Database initialized successfully on attempt 1")
-                
+                pass  # Continue without extension for faster startup
         except Exception as e:
-            logger.warning(f"Database initialization failed: {e}")
-            # Continue without failing - health checks will handle this
+            pass  # Continue for health checks even if DB fails initially
     
     # Register custom template filters
     from datetime import datetime

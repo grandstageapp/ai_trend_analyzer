@@ -1,16 +1,16 @@
 from app import create_app
 from flask import jsonify
-from datetime import datetime
 import logging
+import os
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging for faster startup
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# Create the main application
+# Create the main application using existing factory
 app = create_app()
 
-# Add health check endpoints for deployment (NOT on root path to preserve homepage)
+# Add deployment health endpoints that respond immediately
 @app.route('/health')
 def health_check():
     """Health check endpoint for deployment platforms"""
@@ -18,7 +18,7 @@ def health_check():
 
 @app.route('/ping')
 def ping():
-    """Simple ping endpoint for load balancers"""
+    """Ping endpoint for load balancers"""
     return {'status': 'ok'}, 200
 
 
