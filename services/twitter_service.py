@@ -62,8 +62,8 @@ class TwitterService:
                 "query": query,
                 "max_results": max(10, min(max_results, 100)),  # API minimum is 10, maximum is 100
                 "start_time": since_time,
-                "tweet.fields": "created_at,public_metrics,author_id,text,id,lang,possibly_sensitive",
-                "user.fields": "id,username,name,public_metrics,profile_image_url,verified,created_at",
+                "tweet.fields": "created_at,public_metrics,author_id,text,id,lang",
+                "user.fields": "id,username,name,public_metrics,verified",
                 "expansions": "author_id",
                 "sort_order": "recency"
             }
@@ -188,6 +188,7 @@ class TwitterService:
                         'username': author_info.get('username', 'unknown'),
                         'name': author_info.get('name', 'Unknown'),
                         'follower_count': author_info.get('public_metrics', {}).get('followers_count', 0),
+                        'verified': author_info.get('verified', False),
                         'profile_url': f"https://twitter.com/{author_info.get('username', 'unknown')}"
                     },
                     'metrics': {

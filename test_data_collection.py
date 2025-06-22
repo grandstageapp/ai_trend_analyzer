@@ -51,7 +51,8 @@ def test_data_collection():
                 author = Author(
                     username=author_data.get('username', 'test_user'),
                     author_name=author_data.get('name', 'Test User'),
-                    follower_count=author_data.get('public_metrics', {}).get('followers_count', 0)
+                    follower_count=author_data.get('follower_count', 0),
+                    verified=author_data.get('verified', False)
                 )
                 db.session.add(author)
                 db.session.commit()

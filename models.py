@@ -13,6 +13,7 @@ class Author(db.Model):
     author_name = db.Column(db.String(200), nullable=True)
     profile_url = db.Column(db.String(500), nullable=True)
     follower_count = db.Column(db.Integer, default=0)
+    verified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

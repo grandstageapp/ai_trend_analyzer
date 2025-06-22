@@ -196,6 +196,7 @@ class BackgroundTasks:
                 # Update author information
                 author.author_name = author_data.get('name', author.author_name)
                 author.follower_count = author_data.get('follower_count', author.follower_count)
+                author.verified = author_data.get('verified', author.verified)
                 author.updated_at = datetime.utcnow()
             else:
                 # Create new author
@@ -204,6 +205,7 @@ class BackgroundTasks:
                     author_name=author_data.get('name', ''),
                     profile_url=author_data.get('profile_url', ''),
                     follower_count=author_data.get('follower_count', 0),
+                    verified=author_data.get('verified', False),
                     created_at=datetime.utcnow()
                 )
                 db.session.add(author)
