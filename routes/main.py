@@ -421,3 +421,32 @@ def search_trends():
     except Exception as e:
         logger.error(f"Error in search_trends: {e}")
         return render_template('components/trend_card.html', trends=[])
+
+# Backup health check route in main routes for redundancy
+@main_bp.route('/health')
+def backup_health_check():
+    """
+    Backup health check endpoint in main routes
+    This provides redundancy if the dedicated health routes module fails
+    """
+    try:
+        # Simple database connectivity test
+        from models import db
+        db.session.execute(db.text('SELECT 1'))
+        
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'service': 'ai-trends-analyzer',
+            'source': 'backup'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Backup health check failed: {e}")
+        return jsonify({
+            'status': 'unhealthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'service': 'ai-trends-analyzer',
+            'source': 'backup',
+            'error': str(e)
+        }), 503
