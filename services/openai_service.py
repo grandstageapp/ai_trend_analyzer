@@ -48,10 +48,18 @@ class OpenAIService:
             logger.error("OPENAI_API_KEY environment variable not set")
             raise ValueError("OpenAI API key not configured")
         
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = OpenAI(api_key=self.api_key, timeout=60.0)
         # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
         # do not change this unless explicitly requested by the user
         self.model = "gpt-4o"
+        self.embedding_model = "text-embedding-3-large"
+        
+        # Circuit breaker state
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.circuit_open = False
+        self.failure_threshold = 5
+        self.recovery_timeout = 300  # 5 minutes
     
     def _check_circuit_breaker(self):
         """Check if circuit breaker should block requests"""
