@@ -92,10 +92,10 @@ def create_app():
             return ""
         return markdown.markdown(text, extensions=['nl2br'])
     
-    # Simple root health check - critical for deployment
-    @app.route('/')
-    def root_health_check():
-        """Root endpoint that returns 200 for deployment health checks"""
+    # Simple deployment health check endpoint
+    @app.route('/ping')
+    def deployment_health_check():
+        """Simple endpoint for deployment health checks"""
         return {
             'status': 'healthy',
             'service': 'ai-trends-analyzer',
