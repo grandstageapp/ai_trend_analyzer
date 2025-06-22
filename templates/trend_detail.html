@@ -29,14 +29,6 @@
                                 {{ trend.title }}
                             </h1>
                             <div class="d-flex flex-wrap gap-3 mb-3">
-                                <span class="badge bg-primary fs-6">
-                                    <i class="material-icons me-1">article</i>
-                                    {{ trend.total_posts }} Posts
-                                </span>
-                                <span class="badge bg-success fs-6">
-                                    <i class="material-icons me-1">star</i>
-                                    Score: {{ "%.2f"|format(trend.get_latest_score()) }}
-                                </span>
                                 <span class="badge bg-info fs-6">
                                     <i class="material-icons me-1">schedule</i>
                                     {{ trend.created_at.strftime('%B %d, %Y') }}
