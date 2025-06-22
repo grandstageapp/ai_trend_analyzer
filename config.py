@@ -41,3 +41,4 @@ class Config:
     DEFAULT_SEARCH_RESULTS = 10  # API minimum is 10
     MAX_SEARCH_RESULTS = 100     # API maximum is 100
     SEARCH_TERMS_LIMIT = 3       # Limit search terms to avoid query length issues
+    SEARCH_TERMS_LIMIT = 3       # Limit search terms to avoid query length issues
