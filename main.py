@@ -7,8 +7,28 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Create the main application
+# Create the full application but with health endpoints first
 app = create_app()
+
+# Override root route with health check for deployment
+@app.route('/', methods=['GET'])
+def root_health():
+    """Root health check for deployment - responds immediately"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'ai-trends-analyzer',
+        'timestamp': datetime.utcnow().isoformat()
+    }), 200
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Simple health endpoint"""
+    return jsonify({'status': 'ok'}), 200
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    """Ping endpoint for load balancers"""
+    return jsonify({'status': 'ok'}), 200
 
 
 
