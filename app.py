@@ -24,11 +24,15 @@ def create_app():
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     
-    # Database configuration
+    # Database configuration with improved connection pooling
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://localhost/ai_trends")
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
+        "pool_size": 20,           # Number of connections to maintain
+        "max_overflow": 30,        # Additional connections beyond pool_size
+        "pool_recycle": 3600,      # Recycle connections every hour
+        "pool_pre_ping": True,     # Verify connections before use
+        "pool_timeout": 30,        # Timeout for getting connection from pool
+        "echo": False,             # Set to True for SQL debugging
     }
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     

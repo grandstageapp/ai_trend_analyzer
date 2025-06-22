@@ -1,73 +1,110 @@
 import logging
+import uuid
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
+from contextlib import contextmanager
 from app import db, create_app
-from models import Post, Author, Engagement, TrendScore
-from services.twitter_service import TwitterService
-from services.trend_service import TrendService
-from config import Config
+from models import Post, Author, Engagement, TrendScore, Trend
+from services.service_manager import ServiceManager
+from utils.exceptions import (
+    ProcessingException, DatabaseException, TwitterAPIException,
+    DataIntegrityException, TrendAnalysisException
+)
+from utils.monitoring import task_monitor, TaskStatus
 
 logger = logging.getLogger(__name__)
 
 class BackgroundTasks:
-    """Background tasks for data fetching and processing"""
+    """Background tasks for data fetching and processing with improved architecture"""
     
     def __init__(self):
-        self.twitter_service = TwitterService()
-        self.trend_service = TrendService()
-        self.config = Config()
+        self.service_manager = ServiceManager()
+        self.correlation_id = str(uuid.uuid4())[:8]
+        logger.info(f"[{self.correlation_id}] BackgroundTasks initialized")
+    
+    @contextmanager
+    def database_transaction(self):
+        """Context manager for database transactions with proper error handling"""
+        try:
+            yield
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"[{self.correlation_id}] Database transaction failed: {e}")
+            raise DatabaseException(f"Transaction failed: {e}", self.correlation_id, e)
     
     def fetch_and_process_posts(self) -> None:
         """
         Main background task to fetch posts from Twitter and process them
         This should be run every 24 hours
         """
+        task_id = f"fetch_posts_{int(datetime.utcnow().timestamp())}"
+        metrics = task_monitor.start_task(task_id, "fetch_and_process_posts", self.correlation_id)
+        
         with create_app().app_context():
             try:
-                logger.info("Starting background task: fetch and process posts")
+                logger.info(f"[{self.correlation_id}] Starting background task: fetch and process posts")
                 
                 # Skip rate limit check to avoid consuming quota
                 # The search_recent_posts function will handle rate limiting internally
                 
                 # Fetch recent posts from Twitter
-                search_terms = self.config.AI_SEARCH_TERMS[:self.config.SEARCH_TERMS_LIMIT]
-                logger.info(f"Fetching posts with terms: {search_terms}...")
-                posts_data = self.twitter_service.search_recent_posts(
-                    search_terms=search_terms,
-                    max_results=self.config.DEFAULT_SEARCH_RESULTS
-                )
+                config = self.service_manager.config
+                search_terms = config.AI_SEARCH_TERMS[:config.SEARCH_TERMS_LIMIT]
+                logger.info(f"[{self.correlation_id}] Fetching posts with terms: {search_terms}...")
                 
-                logger.info(f"API returned {len(posts_data)} posts")
+                try:
+                    posts_data = self.service_manager.twitter_service.search_recent_posts(
+                        search_terms=search_terms,
+                        max_results=config.DEFAULT_SEARCH_RESULTS
+                    )
+                except Exception as e:
+                    raise TwitterAPIException(f"Failed to fetch posts: {e}", correlation_id=self.correlation_id, cause=e)
+                
+                logger.info(f"[{self.correlation_id}] API returned {len(posts_data)} posts")
                 
                 if not posts_data:
-                    logger.warning("No posts retrieved from Twitter API - checking if rate limited")
+                    logger.warning(f"[{self.correlation_id}] No posts retrieved from Twitter API")
                     return
                 
                 # Log first post structure for debugging
                 if posts_data:
-                    logger.debug(f"Sample post keys: {list(posts_data[0].keys())}")
-                    logger.debug(f"Sample post content: {posts_data[0].get('content', 'NO_CONTENT')[:100]}")
+                    logger.debug(f"[{self.correlation_id}] Sample post keys: {list(posts_data[0].keys())}")
+                    logger.debug(f"[{self.correlation_id}] Sample post content: {posts_data[0].get('content', 'NO_CONTENT')[:100]}")
                 
-                # Store posts and authors in database
-                logger.info("Starting database storage...")
-                stored_posts = self._store_posts_and_authors(posts_data)
-                logger.info(f"Database storage completed: {len(stored_posts)} posts stored")
-                
-                if stored_posts:
-                    # Analyze trends from new posts
-                    logger.info("Starting trend analysis...")
-                    self._analyze_and_create_trends(stored_posts)
+                # Store posts and authors in database with transaction management
+                with self.database_transaction():
+                    logger.info(f"[{self.correlation_id}] Starting database storage...")
+                    stored_posts = self._store_posts_and_authors(posts_data)
+                    logger.info(f"[{self.correlation_id}] Database storage completed: {len(stored_posts)} posts stored")
                     
-                    # Calculate trend scores
-                    logger.info("Calculating trend scores...")
-                    self.trend_service.calculate_trend_scores()
+                    if stored_posts:
+                        # Analyze trends from new posts
+                        logger.info(f"[{self.correlation_id}] Starting trend analysis...")
+                        self._analyze_and_create_trends(stored_posts)
+                        
+                        # Calculate trend scores
+                        logger.info(f"[{self.correlation_id}] Calculating trend scores...")
+                        self.service_manager.trend_service.calculate_trend_scores()
                 
-                db.session.commit()
-                logger.info(f"Background task completed successfully. Processed {len(stored_posts)} new posts")
+                logger.info(f"[{self.correlation_id}] Background task completed successfully. Processed {len(stored_posts)} new posts")
                 
+                # Calculate trends created (approximate)
+                trends_created = len(stored_posts) // 10 if stored_posts else 0  # Rough estimate
+                task_monitor.complete_task(task_id, len(stored_posts), trends_created)
+                
+            except TwitterAPIException as e:
+                logger.error(f"[{self.correlation_id}] Twitter API error: {e}")
+                task_monitor.fail_task(task_id, str(e))
+                raise
+            except DatabaseException as e:
+                logger.error(f"[{self.correlation_id}] Database error: {e}")
+                task_monitor.fail_task(task_id, str(e))
+                raise
             except Exception as e:
-                logger.error(f"Error in background task: {e}")
-                db.session.rollback()
+                logger.error(f"[{self.correlation_id}] Unexpected error in background task: {e}")
+                task_monitor.fail_task(task_id, str(e))
+                raise ProcessingException(f"Background task failed: {e}", self.correlation_id, e)
     
     def daily_trend_analysis(self) -> None:
         """
@@ -211,8 +248,8 @@ class BackgroundTasks:
             return author
             
         except Exception as e:
-            logger.error(f"Error handling author {author_data.get('username', 'unknown')}: {e}")
-            return None
+            logger.error(f"[{self.correlation_id}] Error handling author {author_data.get('username', 'unknown')}: {e}")
+            raise DataIntegrityException(f"Failed to create/update author: {e}", self.correlation_id, e)
     
     def _update_post_engagement(self, post: Post, metrics: dict) -> None:
         """
