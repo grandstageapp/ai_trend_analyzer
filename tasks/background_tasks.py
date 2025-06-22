@@ -113,6 +113,13 @@ class BackgroundTasks:
             for i, post_data in enumerate(posts_data):
                 logger.debug(f"Processing post {i+1}/{len(posts_data)}: {post_data.get('post_id', 'NO_ID')}")
                 
+                # Validate post data structure
+                required_fields = ['post_id', 'content', 'created_at', 'author', 'metrics']
+                missing_fields = [field for field in required_fields if field not in post_data]
+                if missing_fields:
+                    logger.warning(f"Skipping post due to missing fields: {missing_fields}")
+                    continue
+                
                 # Check if post already exists
                 existing_post = Post.query.filter_by(
                     post_id=post_data['post_id']
