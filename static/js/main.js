@@ -208,26 +208,17 @@ function initializeTooltips() {
     console.log(`Initialized ${tooltipList.length} tooltips`);
 }
 
-// Auto Refresh Management
+// Auto Refresh Management (Disabled to prevent errors)
 function initializeAutoRefresh() {
-    if (!AITrendsApp.state.isAutoRefreshEnabled) return;
+    // Auto-refresh disabled to prevent page reload errors
+    console.log('Auto-refresh disabled for stability');
     
-    setInterval(() => {
-        if (!document.hidden && shouldAutoRefresh()) {
-            performAutoRefresh();
-        }
-    }, AITrendsApp.config.refreshInterval);
-    
-    // Pause auto-refresh when tab is not visible
+    // Still track visibility changes for logging
     document.addEventListener('visibilitychange', function() {
         if (document.hidden) {
             console.log('Auto-refresh paused (tab not visible)');
         } else {
             console.log('Auto-refresh resumed');
-            // Check if we need to refresh after becoming visible
-            if (shouldAutoRefresh()) {
-                performAutoRefresh();
-            }
         }
     });
 }
@@ -238,19 +229,8 @@ function shouldAutoRefresh() {
 }
 
 function performAutoRefresh() {
-    console.log('Performing auto-refresh...');
-    
-    // Only refresh if on the main dashboard
-    if (window.location.pathname === '/') {
-        // Show subtle loading indicator
-        showSubtleRefreshIndicator();
-        
-        // Reload the page
-        setTimeout(() => {
-            location.reload();
-        }, 1000);
-    }
-    
+    // Auto-refresh disabled - manual refresh only
+    console.log('Auto-refresh disabled - use manual refresh if needed');
     AITrendsApp.state.lastUpdateTime = Date.now();
 }
 
@@ -331,7 +311,8 @@ function initializeHTMXEvents() {
     document.body.addEventListener('htmx:responseError', function(evt) {
         console.error('HTMX request failed:', evt.detail);
         hideLoadingOverlay();
-        showError('Failed to load content. Please try again.');
+        // Don't show error popup for non-critical HTMX failures
+        console.log('HTMX request failed - continuing without error popup');
     });
     
     // HTMX timeout handling
