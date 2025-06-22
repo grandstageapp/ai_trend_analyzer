@@ -6,18 +6,24 @@
     <title>{% block title %}AI Trends Analyzer{% endblock %}</title>
     
     <!-- Bootstrap Material UI -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" 
+          onerror="console.warn('Bootstrap CSS failed to load')">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"
+          onerror="console.warn('Material Icons failed to load')">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"
+          onerror="console.warn('Roboto font failed to load')">
     
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" 
+            onerror="console.warn('Chart.js failed to load')"></script>
     
     <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"
+            onerror="console.warn('HTMX failed to load')"></script>
     
     <!-- Feather Icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://unpkg.com/feather-icons"
+            onerror="console.warn('Feather Icons failed to load')"></script>
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
@@ -153,23 +159,40 @@
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+            onerror="console.warn('Bootstrap JS failed to load')"></script>
+    
+    <!-- Enhanced Error Handler (load first) -->
+    <script src="{{ url_for('static', filename='js/error-handler.js') }}"></script>
     
     <!-- Custom JavaScript -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"
+            onerror="console.error('Main application JS failed to load')"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"
+            onerror="console.warn('Charts JS failed to load')"></script>
     
     {% block scripts %}{% endblock %}
     
     <script>
-        // Initialize Feather icons
-        feather.replace();
+        // Initialize components safely
+        try {
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        } catch (e) {
+            console.log('Feather icons not available');
+        }
         
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+        try {
+            if (typeof bootstrap !== 'undefined') {
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                })
+            }
+        } catch (e) {
+            console.log('Bootstrap tooltips not available');
+        }
     </script>
 </body>
 </html>

@@ -1,5 +1,37 @@
 // AI Trends Analyzer - Main JavaScript
 
+// Global error handler to suppress cross-origin script errors
+window.addEventListener('error', function(event) {
+    // Suppress generic "Script error." messages from cross-origin resources
+    if (event.message === 'Script error.' || event.message === '') {
+        console.log('Suppressed cross-origin script error (non-actionable)');
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+    }
+    
+    // Log other errors for debugging but don't show to user unless critical
+    if (event.error && event.error.stack) {
+        console.error('JavaScript Error:', event.error);
+    }
+    
+    // Prevent the error from bubbling up to user-facing error handlers
+    return false;
+});
+
+// Global promise rejection handler
+window.addEventListener('unhandledrejection', function(event) {
+    console.warn('Unhandled promise rejection:', event.reason);
+    // Don't show user-facing errors for network/resource loading issues
+    if (event.reason && (
+        event.reason.message?.includes('fetch') ||
+        event.reason.message?.includes('network') ||
+        event.reason.message?.includes('load')
+    )) {
+        event.preventDefault();
+    }
+});
+
 // Global application state
 const AITrendsApp = {
     config: {
@@ -31,25 +63,42 @@ function initializeApp() {
     console.log('Initializing AI Trends Analyzer...');
     
     try {
-        // Initialize components
-        initializeNavigation();
-        initializeSearch();
-        initializeFilters();
-        initializeTrendCards();
-        initializeTooltips();
-        initializeAutoRefresh();
-        initializeKeyboardShortcuts();
-        initializeExpandableDescription();
-        
-        // Initialize HTMX event listeners
-        initializeHTMXEvents();
+        // Initialize components with error boundaries
+        safeInitialize('Navigation', initializeNavigation);
+        safeInitialize('Search', initializeSearch);
+        safeInitialize('Filters', initializeFilters);
+        safeInitialize('Trend Cards', initializeTrendCards);
+        safeInitialize('Tooltips', initializeTooltips);
+        safeInitialize('Auto Refresh', initializeAutoRefresh);
+        safeInitialize('Keyboard Shortcuts', initializeKeyboardShortcuts);
+        safeInitialize('Expandable Description', initializeExpandableDescription);
+        safeInitialize('HTMX Events', initializeHTMXEvents);
         
         console.log('AI Trends Analyzer initialized successfully');
     } catch (error) {
-        console.error('Error initializing application:', error);
-        // Show error to user
-        showError('Application initialization failed. Please refresh the page.');
+        console.error('Critical error initializing application:', error);
+        // Only show error for truly critical failures
+        if (isCriticalError(error)) {
+            showError('Application initialization failed. Please refresh the page.');
+        }
     }
+}
+
+function safeInitialize(componentName, initFunction) {
+    try {
+        initFunction();
+    } catch (error) {
+        console.warn(`Non-critical error initializing ${componentName}:`, error);
+        // Continue with other components
+    }
+}
+
+function isCriticalError(error) {
+    // Only consider errors critical if they prevent core functionality
+    const criticalKeywords = ['database', 'authentication', 'authorization', 'csrf'];
+    return criticalKeywords.some(keyword => 
+        error.message?.toLowerCase().includes(keyword)
+    );
 }
 
 // Navigation Management
@@ -309,10 +358,12 @@ function initializeHTMXEvents() {
     
     // HTMX error handling
     document.body.addEventListener('htmx:responseError', function(evt) {
-        console.error('HTMX request failed:', evt.detail);
+        console.log('HTMX request failed (non-critical):', evt.detail);
         hideLoadingOverlay();
-        // Don't show error popup for non-critical HTMX failures
-        console.log('HTMX request failed - continuing without error popup');
+        // Only show user errors for critical HTMX failures (auth, server errors)
+        if (evt.detail.xhr?.status >= 500) {
+            showError('Server error occurred. Please try again.');
+        }
     });
     
     // HTMX timeout handling
