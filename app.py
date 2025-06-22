@@ -40,16 +40,14 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     
-    with app.app_context():
-        # Import models to ensure tables are defined
-        import models
-        
-        # Initialize database with minimal operations for deployment
-        try:
+    # Skip database initialization during app creation for speed
+    # Database will be initialized on first use
+    try:
+        with app.app_context():
+            import models
             db.create_all()
-        except Exception:
-            # Continue without database for health checks
-            pass
+    except:
+        pass
     
     # Register custom template filters
     from datetime import datetime
