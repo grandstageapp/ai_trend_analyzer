@@ -1,49 +1,26 @@
 """
-AI Trends Analyzer - Dual Mode Entry Point
+AI Trends Analyzer - Production Ready
 """
+from app import create_app
+from flask import jsonify
+import logging
 import os
 
-# Check if we're in deployment mode (deployment env vars or production indicators)
-if (os.environ.get('REPL_DEPLOYMENT') or 
-    os.environ.get('RAILWAY_ENVIRONMENT') or 
-    os.environ.get('RENDER') or
-    os.environ.get('VERCEL') or
-    'gunicorn' in os.environ.get('SERVER_SOFTWARE', '')):
-    # Ultra-fast deployment mode
-    from flask import Flask, jsonify
-    
-    app = Flask(__name__)
-    app.secret_key = os.environ.get('SESSION_SECRET', 'deploy-key')
-    
-    @app.route('/health')
-    def health():
-        return {'status': 'healthy'}, 200
-    
-    @app.route('/ping')
-    def ping():
-        return {'status': 'ok'}, 200
-    
-    @app.route('/')
-    def root():
-        return {'status': 'ok', 'service': 'ai-trends-analyzer'}, 200
+# Configure minimal logging 
+logging.basicConfig(level=logging.CRITICAL)
+logging.getLogger('werkzeug').setLevel(logging.CRITICAL)
 
-else:
-    # Full development mode
-    from app import create_app
-    from flask import jsonify
-    import logging
-    
-    logging.basicConfig(level=logging.ERROR)
-    
-    app = create_app()
-    
-    @app.route('/health')
-    def health_check():
-        return {'status': 'healthy'}, 200
-    
-    @app.route('/ping')
-    def ping():
-        return {'status': 'ok'}, 200
+# Create the application
+app = create_app()
+
+# Add ultra-fast health endpoints that bypass all middleware
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'healthy'}), 200, {'Content-Type': 'application/json'}
+
+@app.route('/ping', methods=['GET']) 
+def ping():
+    return jsonify({'status': 'ok'}), 200, {'Content-Type': 'application/json'}
 
 
 
