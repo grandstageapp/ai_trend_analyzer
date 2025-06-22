@@ -94,39 +94,37 @@ def index():
         
         trends = trends_pagination.items
         
-        # Prepare trend data with scores, summaries, and engagement data
+        # Get all trend IDs for bulk queries
+        trend_ids = [trend.id for trend in trends]
+        
+        # Single query for all post counts
+        post_counts = db.session.query(
+            PostTrend.trend_id,
+            func.count(PostTrend.post_id).label('count')
+        ).filter(PostTrend.trend_id.in_(trend_ids)).group_by(PostTrend.trend_id).all()
+        post_count_map = {pc.trend_id: pc.count for pc in post_counts}
+        
+        # Single query for all engagement totals
+        engagement_totals = db.session.query(
+            PostTrend.trend_id,
+            func.sum(Engagement.like_count + Engagement.comment_count + Engagement.repost_count).label('total')
+        ).join(Post, PostTrend.post_id == Post.id)\
+         .join(Engagement, Post.id == Engagement.post_id)\
+         .filter(PostTrend.trend_id.in_(trend_ids))\
+         .group_by(PostTrend.trend_id).all()
+        engagement_map = {et.trend_id: int(et.total or 0) for et in engagement_totals}
+        
+        # Prepare trend data efficiently
         trend_data = []
         for trend in trends:
-            score_history = trend.get_score_history(10)
-            
-            # Get actual post count and engagement data for this trend
-            related_posts = db.session.query(Post).join(PostTrend).filter(
-                PostTrend.trend_id == trend.id
-            ).all()
-            
-            total_engagement = 0
-            post_count = len(related_posts)
-            
-            for post in related_posts:
-                latest_engagement = db.session.query(Engagement).filter_by(
-                    post_id=post.id
-                ).order_by(Engagement.timestamp.desc()).first()
-                
-                if latest_engagement:
-                    total_engagement += (
-                        latest_engagement.like_count + 
-                        latest_engagement.comment_count + 
-                        latest_engagement.repost_count
-                    )
-            
             trend_data.append({
                 'trend': trend,
                 'latest_score': trend.get_latest_score(),
-                'score_history': score_history,
+                'score_history': trend.get_score_history(10),
                 'summary': truncate_text(trend.description, 2) if trend.description else '',
                 'hover_summary': truncate_text(trend.description, 3) if trend.description else '',
-                'post_count': post_count,
-                'total_engagement': total_engagement
+                'post_count': post_count_map.get(trend.id, 0),
+                'total_engagement': engagement_map.get(trend.id, 0)
             })
         
         # Get total trends count for header display
