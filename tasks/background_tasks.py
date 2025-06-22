@@ -40,8 +40,8 @@ class BackgroundTasks:
                 # Fetch recent posts from Twitter
                 logger.info(f"Fetching posts with terms: {self.config.AI_SEARCH_TERMS[:3]}... (quota: {remaining})")
                 posts_data = self.twitter_service.search_recent_posts(
-                    search_terms=self.config.AI_SEARCH_TERMS[:5],  # Limit terms to avoid query length issues
-                    max_results=min(self.config.MAX_POSTS_PER_DAY, 15)  # Conservative limit
+                    search_terms=self.config.AI_SEARCH_TERMS[:3],  # Limit terms for testing
+                    max_results=3  # Testing with 3 posts
                 )
                 
                 logger.info(f"API returned {len(posts_data)} posts")

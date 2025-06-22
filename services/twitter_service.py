@@ -177,7 +177,6 @@ class TwitterService:
             # Since the dedicated rate limit endpoint returns 404, we'll use a more efficient approach
             # Store the last known rate limit info and only check when needed
             if hasattr(self, '_last_rate_check') and hasattr(self, '_cached_rate_info'):
-                from datetime import datetime
                 if (datetime.utcnow().timestamp() - self._last_rate_check) < 30:  # Cache for 30 seconds
                     return self._cached_rate_info
             
