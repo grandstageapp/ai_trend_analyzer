@@ -1,19 +1,24 @@
+"""
+Main application entry point optimized for deployment
+"""
+import logging
+import os
+import sys
+
+# Configure minimal logging for fastest startup
+logging.basicConfig(level=logging.CRITICAL)
+
+# Always use the full application with optimized startup
 from app import create_app
 from flask import jsonify
-import logging
 
-# Minimal logging for faster deployment startup
-logging.basicConfig(level=logging.ERROR)
-
-# Create application using the existing factory
 app = create_app()
 
-# Add fast health endpoints for deployment
 @app.route('/health')
 def health_check():
     return {'status': 'healthy'}, 200
 
-@app.route('/ping')  
+@app.route('/ping')
 def ping():
     return {'status': 'ok'}, 200
 

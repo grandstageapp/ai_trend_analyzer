@@ -24,15 +24,16 @@ def create_app():
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     
-    # Optimized database configuration for deployment
+    # Ultra-fast database configuration for deployment
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://localhost/ai_trends")
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_size": 5,            # Reduced for faster startup
-        "max_overflow": 10,        # Reduced for faster startup  
-        "pool_recycle": 1800,      # 30 minutes
-        "pool_pre_ping": True,     # Verify connections before use
-        "pool_timeout": 20,        # Reduced timeout
-        "echo": False,             # No SQL debugging
+        "pool_size": 1,            # Minimal for fastest startup
+        "max_overflow": 2,         # Minimal for fastest startup
+        "pool_recycle": 3600,      # 1 hour
+        "pool_pre_ping": False,    # Skip ping for faster startup
+        "pool_timeout": 10,        # Fast timeout
+        "echo": False,
+        "connect_args": {"connect_timeout": 5}  # Fast connection timeout
     }
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
