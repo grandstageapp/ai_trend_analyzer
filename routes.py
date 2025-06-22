@@ -124,6 +124,7 @@ def index():
                 'latest_score': trend.get_latest_score(),
                 'score_history': score_history,
                 'summary': truncate_text(trend.description, 2) if trend.description else '',
+                'hover_summary': truncate_text(trend.description, 3) if trend.description else '',
                 'post_count': post_count,
                 'total_engagement': total_engagement
             })

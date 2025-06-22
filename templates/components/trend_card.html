@@ -72,7 +72,9 @@
             <div class="hover-content">
                 <h6 class="mb-2">{{ trend_item.trend.title }}</h6>
                 <p class="small mb-3">
-                    {% if trend_item.trend.description %}
+                    {% if trend_item.hover_summary %}
+                        {{ trend_item.hover_summary }}
+                    {% elif trend_item.trend.description %}
                         {{ trend_item.trend.description[:100] }}...
                     {% else %}
                         Explore this trending AI topic in detail

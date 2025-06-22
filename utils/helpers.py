@@ -2,6 +2,7 @@ import re
 from datetime import datetime, timedelta
 from typing import Any, Optional, List
 import logging
+import markdown
 
 logger = logging.getLogger(__name__)
 
@@ -24,17 +25,29 @@ def format_number(num: int) -> str:
 
 def truncate_text(text: str, sentences: int = 2) -> str:
     """
-    Truncate text to specified number of sentences
+    Truncate text to specified number of sentences, removing markdown formatting
     
     Args:
-        text: Text to truncate
+        text: Text to truncate (may contain markdown)
         sentences: Number of sentences to keep
         
     Returns:
-        Truncated text
+        Truncated plain text
     """
     if not text:
         return ""
+    
+    # Remove markdown formatting for clean summary
+    # Remove headers
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    # Remove bold/italic
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
+    # Remove bullet points
+    text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
+    # Clean up extra whitespace
+    text = re.sub(r'\n+', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
     
     # Split by sentence ending punctuation
     sentence_endings = re.split(r'[.!?]+', text)
@@ -48,6 +61,57 @@ def truncate_text(text: str, sentences: int = 2) -> str:
         truncated += '.'
     
     return truncated
+
+def truncate_markdown(text: str, sentences: int = 2) -> str:
+    """
+    Truncate markdown text while preserving some formatting
+    
+    Args:
+        text: Markdown text to truncate
+        sentences: Number of sentences to keep
+        
+    Returns:
+        Truncated markdown text
+    """
+    if not text:
+        return ""
+    
+    # Split into paragraphs to handle markdown structure
+    paragraphs = text.split('\n\n')
+    
+    collected_sentences = []
+    sentence_count = 0
+    
+    for paragraph in paragraphs:
+        if sentence_count >= sentences:
+            break
+            
+        # Skip headers for summary
+        if paragraph.startswith('#'):
+            continue
+            
+        # Clean up paragraph
+        para_text = paragraph.strip()
+        if not para_text:
+            continue
+            
+        # Count sentences in this paragraph
+        para_sentences = re.split(r'[.!?]+', para_text)
+        para_sentences = [s.strip() for s in para_sentences if s.strip()]
+        
+        for sentence in para_sentences:
+            if sentence_count >= sentences:
+                break
+            collected_sentences.append(sentence)
+            sentence_count += 1
+    
+    if collected_sentences:
+        result = '. '.join(collected_sentences)
+        if not result.endswith('.'):
+            result += '.'
+        return result
+    
+    return ""
 
 def clean_tweet_text(text: str) -> str:
     """
