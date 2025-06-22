@@ -43,18 +43,19 @@ try:
     from app import create_app
     full_app = create_app()
     
-    # Copy all routes from full app to main app (except conflicting ones)
-    for rule in full_app.url_map.iter_rules():
-        endpoint = rule.endpoint
-        if endpoint not in ['static', 'root', 'ping', 'health', 'deployment_health_check']:
-            try:
-                view_func = full_app.view_functions[endpoint]
-                app.add_url_rule(rule.rule, endpoint, view_func, methods=rule.methods)
-            except Exception as e:
-                logger.warning(f"Could not copy route {rule.rule}: {e}")
+    # Register all blueprints from full app
+    for blueprint_name, blueprint in full_app.blueprints.items():
+        if blueprint_name not in app.blueprints:
+            app.register_blueprint(blueprint)
+            logger.info(f"Registered blueprint: {blueprint_name}")
     
     # Copy template filters and other app context
     app.jinja_env.filters.update(full_app.jinja_env.filters)
+    
+    # Copy error handlers
+    for code, handler in full_app.error_handler_spec.get(None, {}).items():
+        if code not in app.error_handler_spec.get(None, {}):
+            app.register_error_handler(code, handler)
     
     logger.info("Full application loaded successfully")
     
