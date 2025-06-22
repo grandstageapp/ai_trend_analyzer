@@ -20,7 +20,6 @@ class OpenAIService:
         # do not change this unless explicitly requested by the user
         self.model = "gpt-4o"
     
-    @track_performance("embedding_generation")
     def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
         Generate embeddings for a list of texts with caching
@@ -45,7 +44,6 @@ class OpenAIService:
             logger.error(f"Error generating embeddings: {e}")
             return []
     
-    @track_performance("trend_identification")
     def cluster_and_identify_trends(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Use OpenAI to identify trends from clustered posts with caching

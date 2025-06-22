@@ -77,6 +77,13 @@ def create_app():
     from routes import main_bp
     app.register_blueprint(main_bp)
     
+    # Register performance monitoring routes
+    try:
+        from routes.performance import performance_bp
+        app.register_blueprint(performance_bp)
+    except ImportError:
+        logger.warning("Performance routes not available")
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
