@@ -1,10 +1,43 @@
 import os
 import json
 import logging
+import time
+import functools
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
+from config import Config
+from utils.caching import cache_manager
 
 logger = logging.getLogger(__name__)
+
+def retry_with_exponential_backoff(max_retries=3, base_delay=1):
+    """Decorator for retrying API calls with exponential backoff"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    
+                    # Don't retry on certain errors
+                    if hasattr(e, 'status_code') and e.status_code in [401, 403, 429]:
+                        logger.error(f"Non-retryable error in {func.__name__}: {e}")
+                        raise
+                    
+                    if attempt < max_retries:
+                        delay = base_delay * (2 ** attempt)
+                        logger.warning(f"Attempt {attempt + 1} failed for {func.__name__}: {e}. Retrying in {delay}s...")
+                        time.sleep(delay)
+                    else:
+                        logger.error(f"All {max_retries + 1} attempts failed for {func.__name__}")
+            
+            raise last_exception
+        return wrapper
+    return decorator
 
 class OpenAIService:
     """Service for OpenAI API interactions"""
@@ -20,6 +53,35 @@ class OpenAIService:
         # do not change this unless explicitly requested by the user
         self.model = "gpt-4o"
     
+    def _check_circuit_breaker(self):
+        """Check if circuit breaker should block requests"""
+        if not self.circuit_open:
+            return False
+            
+        # Check if recovery timeout has passed
+        if time.time() - self.last_failure_time > self.recovery_timeout:
+            self.circuit_open = False
+            self.failure_count = 0
+            logger.info("Circuit breaker reset - attempting API calls")
+            return False
+            
+        return True
+    
+    def _record_failure(self):
+        """Record API failure for circuit breaker"""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        
+        if self.failure_count >= self.failure_threshold:
+            self.circuit_open = True
+            logger.warning(f"Circuit breaker opened after {self.failure_count} failures")
+    
+    def _record_success(self):
+        """Record API success for circuit breaker"""
+        if self.failure_count > 0:
+            self.failure_count = max(0, self.failure_count - 1)
+
+    @retry_with_exponential_backoff(max_retries=3, base_delay=1)
     def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
         Generate embeddings for a list of texts with caching
@@ -44,9 +106,10 @@ class OpenAIService:
             logger.error(f"Error generating embeddings: {e}")
             return []
     
+    @retry_with_exponential_backoff(max_retries=2, base_delay=2)
     def cluster_and_identify_trends(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Use OpenAI to identify trends from clustered posts with caching
+        Use OpenAI to identify trends from clustered posts with caching and retry logic
         
         Args:
             posts: List of post dictionaries with content
@@ -58,18 +121,31 @@ class OpenAIService:
             if not posts:
                 return []
             
-            # Prepare post content for analysis
-            post_contents = [post.get('content', '') for post in posts]
+            # Check circuit breaker
+            if self._check_circuit_breaker():
+                logger.warning("Circuit breaker open - using fallback trend identification")
+                return self._fallback_trend_identification(posts)
             
-            # Create prompt for trend identification
-            prompt = self._create_trend_identification_prompt(post_contents)
+            # Create cache key
+            post_contents = [post.get('content', '') for post in posts]
+            cache_key = f"trends_{hash(str(sorted(post_contents)))}"
+            cached_result = cache_manager.get(cache_key)
+            
+            if cached_result:
+                logger.info(f"Using cached trend identification for {len(posts)} posts")
+                return cached_result
+            
+            # Create optimized prompt for trend identification
+            prompt = self._create_optimized_trend_prompt(post_contents)
+            
+            start_time = time.time()
             
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert AI trend analyst. Analyze social media posts to identify trending topics in AI and technology. Respond with valid JSON only."
+                        "content": "You are an expert AI trend analyst. Analyze posts to identify trends. Respond with valid JSON only."
                     },
                     {
                         "role": "user", 
@@ -77,22 +153,93 @@ class OpenAIService:
                     }
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.3
+                temperature=0.3,
+                timeout=45.0
             )
+            
+            execution_time = time.time() - start_time
             
             content = response.choices[0].message.content
             if not content:
                 logger.error("Empty response from OpenAI")
-                return []
+                return self._fallback_trend_identification(posts)
+                
             result = json.loads(content)
             trends = result.get('trends', [])
             
-            logger.info(f"Identified {len(trends)} trends from {len(posts)} posts")
+            # Cache for 30 minutes
+            cache_manager.set(cache_key, trends, 1800)
+            
+            self._record_success()
+            logger.info(f"Identified {len(trends)} trends from {len(posts)} posts in {execution_time:.2f}s")
             return trends
             
         except Exception as e:
+            self._record_failure()
             logger.error(f"Error identifying trends: {e}")
+            if "timeout" in str(e).lower():
+                logger.warning("Trend identification timed out, using fallback")
+                return self._fallback_trend_identification(posts)
             return []
+    
+    def _create_optimized_trend_prompt(self, post_contents: List[str]) -> str:
+        """Create an optimized prompt for trend identification"""
+        
+        posts_text = "\n".join([
+            f"{i+1}. {content[:100]}..." if len(content) > 100 else f"{i+1}. {content}"
+            for i, content in enumerate(post_contents[:8])  # Limit to 8 posts
+        ])
+        
+        return f"""
+        Identify trends from these AI posts:
+
+        {posts_text}
+
+        Return JSON:
+        {{
+            "trends": [
+                {{
+                    "title": "Brief title (2-4 words)",
+                    "posts_count": count,
+                    "relevance_score": 1-10
+                }}
+            ]
+        }}
+
+        Focus on: AI models, tools, policy, ethics, enterprise adoption.
+        Only trends appearing in 2+ posts or highly significant.
+        """
+
+    def _fallback_trend_identification(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Generate basic trends when AI analysis fails"""
+        post_contents = [post.get('content', '') for post in posts]
+        
+        # Simple keyword-based trend detection
+        ai_keywords = {
+            'AI Models': ['gpt', 'model', 'llm', 'transformer'],
+            'AI Ethics': ['ethics', 'bias', 'fairness', 'responsibility'], 
+            'Enterprise AI': ['enterprise', 'business', 'company', 'adoption'],
+            'AI Tools': ['tool', 'platform', 'application', 'software'],
+            'AI Research': ['research', 'breakthrough', 'study', 'discovery']
+        }
+        
+        trends = []
+        for trend_name, keywords in ai_keywords.items():
+            matching_posts = 0
+            for content in post_contents:
+                content_lower = content.lower()
+                if any(keyword in content_lower for keyword in keywords):
+                    matching_posts += 1
+            
+            if matching_posts >= 2:
+                trends.append({
+                    'title': trend_name,
+                    'posts_count': matching_posts,
+                    'relevance_score': min(10, matching_posts * 2)
+                })
+        
+        logger.info(f"Generated {len(trends)} fallback trends")
+        return trends
     
     def generate_trend_description(self, trend_title: str, related_posts: List[str]) -> str:
         """
