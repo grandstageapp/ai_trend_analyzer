@@ -55,7 +55,7 @@ class TwitterService:
             # Add filters for recent posts and English language
             # Use 7 days instead of 24 hours to get more results
             since_time = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
-            query += f" lang:en -is:retweet"
+            query += " lang:en -is:retweet"
             
             # API parameters - corrected based on X API documentation
             params = {
