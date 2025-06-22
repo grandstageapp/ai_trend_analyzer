@@ -51,55 +51,62 @@ class CacheManager:
             self.redis_client = None
     
     def get(self, key: str) -> Optional[Any]:
-        """Get value from cache"""
+        """Get value from cache with graceful Redis error handling"""
         try:
             if self.redis_client:
-                value = self.redis_client.get(key)
-                if value:
-                    self.cache_stats['hits'] += 1
-                    return json.loads(value)
-            else:
-                # Memory cache fallback
-                cache_entry = self.memory_cache.get(key)
-                if cache_entry and cache_entry['expires'] > datetime.utcnow():
-                    self.cache_stats['hits'] += 1
-                    return cache_entry['value']
-                elif cache_entry:
-                    # Expired entry
-                    del self.memory_cache[key]
+                try:
+                    value = self.redis_client.get(key)
+                    if value:
+                        self.cache_stats['hits'] += 1
+                        return json.loads(value)
+                except (redis.ConnectionError, redis.TimeoutError) as redis_error:
+                    logger.warning(f"Redis connection failed during get, falling back to memory: {redis_error}")
+                    self.redis_client = None  # Disable Redis temporarily
+            
+            # Memory cache fallback
+            cache_entry = self.memory_cache.get(key)
+            if cache_entry and cache_entry['expires'] > datetime.utcnow():
+                self.cache_stats['hits'] += 1
+                return cache_entry['value']
+            elif cache_entry:
+                # Expired entry
+                del self.memory_cache[key]
             
             self.cache_stats['misses'] += 1
             return None
             
         except Exception as e:
-            logger.error(f"Cache get error for key {key}: {e}")
+            logger.warning(f"Cache get error for key {key}: {e}")
             self.cache_stats['errors'] += 1
             return None
     
     def set(self, key: str, value: Any, ttl: int = 3600) -> bool:
-        """Set value in cache with TTL in seconds"""
+        """Set value in cache with graceful Redis error handling"""
         try:
             if self.redis_client:
-                serialized = json.dumps(value, default=str)
-                result = self.redis_client.setex(key, ttl, serialized)
-                if result:
-                    self.cache_stats['sets'] += 1
-                    return True
-            else:
-                # Memory cache fallback
-                expires = datetime.utcnow() + timedelta(seconds=ttl)
-                self.memory_cache[key] = {
-                    'value': value,
-                    'expires': expires
-                }
-                self.cache_stats['sets'] += 1
-                return True
+                try:
+                    serialized = json.dumps(value, default=str)
+                    result = self.redis_client.setex(key, ttl, serialized)
+                    if result:
+                        self.cache_stats['sets'] += 1
+                        return True
+                except (redis.ConnectionError, redis.TimeoutError) as redis_error:
+                    logger.warning(f"Redis connection failed during set, falling back to memory: {redis_error}")
+                    self.redis_client = None  # Disable Redis temporarily
+            
+            # Memory cache fallback
+            expires = datetime.utcnow() + timedelta(seconds=ttl)
+            self.memory_cache[key] = {
+                'value': value,
+                'expires': expires
+            }
+            self.cache_stats['sets'] += 1
+            return True
             
         except Exception as e:
-            logger.error(f"Cache set error for key {key}: {e}")
+            logger.warning(f"Cache set error for key {key}: {e}")
             self.cache_stats['errors'] += 1
-            
-        return False
+            return False
     
     def delete(self, key: str) -> bool:
         """Delete key from cache"""
