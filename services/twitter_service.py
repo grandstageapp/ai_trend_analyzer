@@ -38,6 +38,15 @@ class TwitterService:
             List of post dictionaries
         """
         try:
+            # Check rate limit first
+            rate_limit = self.get_rate_limit_status()
+            if int(rate_limit.get('remaining', 0)) <= 0:
+                reset_time = int(rate_limit.get('reset_time', 0))
+                current_time = int(datetime.utcnow().timestamp())
+                wait_time = reset_time - current_time
+                logger.warning(f"Rate limit exceeded. Reset in {wait_time} seconds at {datetime.fromtimestamp(reset_time)}")
+                return []
+            
             # Build search query with OR operators
             query = " OR ".join([f'"{term}"' for term in search_terms])
             
@@ -65,6 +74,9 @@ class TwitterService:
                 posts = self._process_search_response(data)
                 logger.info(f"Retrieved {len(posts)} posts from Twitter")
                 return posts
+            elif response.status_code == 429:
+                logger.warning("Rate limit exceeded during search")
+                return []
             else:
                 logger.error(f"Twitter API error: {response.status_code} - {response.text}")
                 return []

@@ -70,6 +70,9 @@ def main():
     logger.info("Running initial rate limit check...")
     check_rate_limit_and_schedule()
     
+    # Also schedule a check in 15 minutes (after rate limit resets)
+    schedule.every(15).minutes.do(check_rate_limit_and_schedule)
+    
     logger.info("Scheduler started. Waiting for scheduled tasks...")
     
     # Keep the scheduler running
