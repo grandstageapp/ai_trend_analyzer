@@ -23,7 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def test_twitter_api_connection():
-    """Test Twitter API connection without making requests for posts"""
+    """Test Twitter API connection and wait for rate limit if needed"""
     print("=== Testing Twitter API Connection ===")
     
     try:
@@ -45,21 +45,35 @@ def test_twitter_api_connection():
         # Initialize Twitter service
         twitter_service = TwitterService()
         
-        # Test rate limit endpoint (doesn't consume quota)
+        # Get fresh rate limit info
         rate_limit = twitter_service.get_rate_limit_status()
         remaining = rate_limit.get('remaining', 0)
         reset_time = rate_limit.get('reset_time', 0)
         
-        if reset_time > 0:
-            reset_datetime = datetime.fromtimestamp(reset_time)
-            print(f"✅ Rate limit info available: {remaining} requests remaining")
+        if remaining > 0:
+            reset_datetime = datetime.fromtimestamp(reset_time) if reset_time else "unknown"
+            print(f"✅ Rate limit OK: {remaining} requests remaining")
             print(f"   Reset time: {reset_datetime}")
-        else:
-            print("⚠️  No cached rate limit info (will be updated after first API call)")
+            return True
+        elif reset_time > 0:
+            reset_datetime = datetime.fromtimestamp(reset_time)
+            current_time = datetime.utcnow().timestamp()
+            wait_seconds = reset_time - current_time
             
-        print("✅ Twitter API connection test passed")
-        return True
-        
+            if wait_seconds > 0:
+                print(f"⏳ Rate limit exceeded. Reset at: {reset_datetime}")
+                print(f"   Waiting {wait_seconds:.0f} seconds for reset...")
+                import time
+                time.sleep(wait_seconds + 5)  # Add 5 second buffer
+                print("✅ Rate limit should be reset now")
+                return True
+            else:
+                print("✅ Rate limit should be reset already")
+                return True
+        else:
+            print("⚠️  Cannot determine rate limit status, proceeding with caution")
+            return True
+            
     except Exception as e:
         print(f"❌ Twitter API connection test failed: {e}")
         import traceback

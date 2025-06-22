@@ -52,24 +52,23 @@ class TwitterService:
                     logger.warning(f"Rate limit exceeded. Reset in {wait_time} seconds at {datetime.fromtimestamp(reset_time)}")
                     return []
             
-            # Build search query with OR operators and proper filters
+            # Build search query with OR operators - simplified for better success rate
             query = " OR ".join([f'"{term}"' for term in search_terms])
             
-            # Add filters: English only, verified users only, exclude retweets, exclude replies
-            query += " lang:en is:verified -is:retweet -is:reply"
+            # Add minimal filters to reduce query complexity
+            query += " lang:en -is:retweet"
             
-            # Use 7 days instead of 24 hours to get more results
-            since_time = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
+            # Use 1 day for more recent and manageable results
+            since_time = (datetime.utcnow() - timedelta(days=1)).isoformat() + "Z"
             
-            # API parameters - corrected based on X API documentation
+            # API parameters - simplified for better reliability
             params = {
                 "query": query,
-                "max_results": max(self.config.DEFAULT_SEARCH_RESULTS, min(max_results, self.config.MAX_SEARCH_RESULTS)),
+                "max_results": min(max_results, 10),  # Start with smaller batch
                 "start_time": since_time,
-                "tweet.fields": "created_at,public_metrics,author_id,text,id,lang",
-                "user.fields": "id,username,name,public_metrics,verified",
-                "expansions": "author_id",
-                "sort_order": "recency"
+                "tweet.fields": "created_at,public_metrics,author_id,text,id",
+                "user.fields": "id,username,name,public_metrics",
+                "expansions": "author_id"
             }
             
             url = f"{self.base_url}/tweets/search/recent"
@@ -223,20 +222,39 @@ class TwitterService:
     
     def get_rate_limit_status(self) -> Dict[str, Any]:
         """
-        Get rate limit status from the last API response headers
-        This doesn't consume API quota - it uses cached info from previous requests
+        Get rate limit status - tries to get fresh data from rate limit endpoint
+        Falls back to cached info from previous requests
         
         Returns:
             Rate limit information with consistent data types
         """
+        try:
+            # Try to get fresh rate limit info (doesn't consume search quota)
+            url = "https://api.twitter.com/1.1/application/rate_limit_status.json"
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                search_info = data.get('resources', {}).get('search', {}).get('/search/tweets', {})
+                
+                if search_info:
+                    fresh_info = {
+                        'remaining': int(search_info.get('remaining', 0)),
+                        'reset_time': int(search_info.get('reset', 0)),
+                        'limit': int(search_info.get('limit', 1))
+                    }
+                    self._cached_rate_info = fresh_info
+                    return fresh_info
+        except Exception as e:
+            logger.warning(f"Could not fetch fresh rate limit info: {e}")
+        
         # Return cached rate limit info if available
         if hasattr(self, '_cached_rate_info'):
             return self._cached_rate_info
         
         # If no cached info, assume we have quota until proven otherwise
-        # This will be updated after the first actual API call
         return {
-            'remaining': 1,  # Use int for consistency
+            'remaining': 1,
             'reset_time': int(datetime.utcnow().timestamp()) + 900,  # 15 minutes from now
             'limit': 1
         }
