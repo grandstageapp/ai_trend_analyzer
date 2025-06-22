@@ -25,7 +25,7 @@ This directory contains utility scripts, test files, and development tools for t
 
 ## Usage
 
-All scripts should be run from the project root directory:
+All scripts should be run from the project root directory and will automatically handle the correct import paths:
 
 ```bash
 # Run Phase 2 architecture tests
@@ -39,6 +39,18 @@ python scripts/populate_sample_data.py
 
 # Manual data collection
 python scripts/manual_data_collection.py
+
+# Test basic app functionality
+python scripts/test_app.py
+
+# Test content generation
+python scripts/test_content_generation.py
+
+# Test data collection
+python scripts/test_data_collection.py
+
+# Test scheduler
+python scripts/test_scheduler.py
 ```
 
 ## Important Notes

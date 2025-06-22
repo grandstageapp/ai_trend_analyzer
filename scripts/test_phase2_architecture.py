@@ -2,6 +2,10 @@
 """
 Comprehensive test script for Phase 2 architecture improvements
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 import uuid
 from datetime import datetime, timedelta

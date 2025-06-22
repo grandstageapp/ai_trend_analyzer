@@ -2,6 +2,10 @@
 """
 Interactive demonstration of Phase 2 architecture improvements
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app import create_app, db
 from tasks.background_tasks import BackgroundTasks
 from services.service_manager import ServiceManager
