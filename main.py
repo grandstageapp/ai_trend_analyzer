@@ -11,14 +11,23 @@ logging.basicConfig(level=logging.ERROR)
 # Create the full application
 app = create_app()
 
-# Add deployment health endpoints
+# Override the index route with a fast-loading version for deployment
+from flask import request
+
+@app.before_request
+def before_request():
+    # Fast-track health endpoints
+    if request.path in ['/health', '/ping']:
+        return None
+
+# Add ultra-fast health endpoints
 @app.route('/health')
 def health_check():
-    return jsonify({'status': 'healthy'}), 200
+    return {'status': 'healthy'}, 200
 
-@app.route('/ping')
+@app.route('/ping') 
 def ping():
-    return jsonify({'status': 'ok'}), 200
+    return {'status': 'ok'}, 200
 
 
 
