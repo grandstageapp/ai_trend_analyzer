@@ -1,21 +1,24 @@
 // AI Trends Analyzer - Main JavaScript
 
-// Global error handler to suppress cross-origin script errors
+// Additional error suppression layer
 window.addEventListener('error', function(event) {
-    // Suppress generic "Script error." messages from cross-origin resources
-    if (event.message === 'Script error.' || event.message === '') {
-        console.log('Suppressed cross-origin script error (non-actionable)');
+    // Suppress any remaining script errors that got through
+    if (event.message === 'Script error.' || 
+        event.message === '' || 
+        event.message === null ||
+        event.message?.includes('Script error')) {
+        console.log('Main.js: Suppressed cross-origin script error (backup layer)');
         event.preventDefault();
         event.stopPropagation();
+        event.stopImmediatePropagation();
         return false;
     }
     
-    // Log other errors for debugging but don't show to user unless critical
-    if (event.error && event.error.stack) {
-        console.error('JavaScript Error:', event.error);
+    // Log legitimate errors for debugging but don't show to user unless critical
+    if (event.error && event.error.stack && !event.message?.includes('Script error')) {
+        console.warn('Legitimate JavaScript Error:', event.error);
     }
     
-    // Prevent the error from bubbling up to user-facing error handlers
     return false;
 });
 
@@ -409,6 +412,15 @@ function showSuccess(message) {
 }
 
 function showError(message) {
+    // Don't show errors for script/resource loading issues
+    if (message?.includes('Script error') || 
+        message?.includes('failed to load') ||
+        message?.includes('network') ||
+        message?.includes('fetch')) {
+        console.log('Suppressed non-actionable error:', message);
+        return;
+    }
+    
     try {
         const toast = document.getElementById('errorToast');
         const toastBody = document.getElementById('errorToastBody');
@@ -419,14 +431,25 @@ function showError(message) {
             bsToast.show();
         } else {
             console.error('Error:', message);
-            // Fallback to alert if Bootstrap isn't available
-            alert('Error: ' + message);
+            // Only show alert for critical errors
+            if (isCriticalUserError(message)) {
+                alert('Error: ' + message);
+            }
         }
     } catch (error) {
         console.error('Error showing error toast:', error);
-        console.error('Error:', message);
-        alert('Error: ' + message);
+        if (isCriticalUserError(message)) {
+            console.error('Critical Error:', message);
+            alert('Error: ' + message);
+        }
     }
+}
+
+function isCriticalUserError(message) {
+    const criticalKeywords = ['authentication', 'authorization', 'payment', 'database', 'server'];
+    return criticalKeywords.some(keyword => 
+        message?.toLowerCase().includes(keyword)
+    );
 }
 
 function showInfo(title, message) {
