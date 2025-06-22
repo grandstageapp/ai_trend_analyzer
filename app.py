@@ -43,9 +43,18 @@ def create_app():
         # Import models to ensure tables are created
         import models
         
-        # Skip database initialization during startup for faster deployment
-        # Database will be initialized on first actual use
-        pass
+        # Initialize database tables
+        try:
+            db.create_all()
+            # PGVector extension setup
+            try:
+                with db.engine.connect() as conn:
+                    conn.execute(db.text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                    conn.commit()
+            except:
+                pass
+        except:
+            pass
     
     # Register custom template filters
     from datetime import datetime
