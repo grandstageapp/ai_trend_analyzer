@@ -206,6 +206,7 @@ class BackgroundTasks:
                 author.verified = author_data.get('verified', False)
                 author.created_at = datetime.utcnow()
                 db.session.add(author)
+                db.session.flush()  # Ensure author gets an ID
             
             return author
             
@@ -222,13 +223,12 @@ class BackgroundTasks:
             metrics: New engagement metrics
         """
         try:
-            engagement = Engagement(
-                post_id=post.id,
-                like_count=metrics['like_count'],
-                comment_count=metrics['reply_count'],
-                repost_count=metrics['retweet_count'] + metrics.get('quote_count', 0),
-                timestamp=datetime.utcnow()
-            )
+            engagement = Engagement()
+            engagement.post_id = post.id
+            engagement.like_count = metrics['like_count']
+            engagement.comment_count = metrics['reply_count']
+            engagement.repost_count = metrics['retweet_count'] + metrics.get('quote_count', 0)
+            engagement.timestamp = datetime.utcnow()
             
             db.session.add(engagement)
             logger.debug(f"Updated engagement for post {post.post_id}")
