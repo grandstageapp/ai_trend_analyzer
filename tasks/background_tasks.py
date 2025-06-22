@@ -8,9 +8,11 @@ from models import Post, Author, Engagement, TrendScore, Trend
 from services.service_manager import ServiceManager
 from utils.exceptions import (
     ProcessingException, DatabaseException, TwitterAPIException,
-    DataIntegrityException, TrendAnalysisException
+    DataIntegrityException, TrendAnalysisException, ValidationException
 )
 from utils.monitoring import task_monitor, TaskStatus
+from utils.validators import data_validator
+from services.performance_service import track_performance
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ class BackgroundTasks:
             logger.error(f"[{self.correlation_id}] Database transaction failed: {e}")
             raise DatabaseException(f"Transaction failed: {e}", self.correlation_id, e)
     
+    @track_performance("fetch_and_process_posts")
     def fetch_and_process_posts(self) -> None:
         """
         Main background task to fetch posts from Twitter and process them
@@ -106,6 +109,7 @@ class BackgroundTasks:
                 task_monitor.fail_task(task_id, str(e))
                 raise ProcessingException(f"Background task failed: {e}", self.correlation_id, e)
     
+    @track_performance("daily_trend_analysis")
     def daily_trend_analysis(self) -> None:
         """
         Daily task to recalculate trend scores and perform deep analysis
